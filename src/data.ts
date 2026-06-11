@@ -51,6 +51,23 @@ export interface StockDetail {
   expenseRatio?: number;
 }
 
+export interface MarketTrend {
+  symbol: string;
+  name: string;
+  price: number;
+  change: string;
+  history: { date: string, value: number }[];
+}
+
+export interface NewsArticle {
+  id: string;
+  title: string;
+  summary: string;
+  url: string;
+  source: string;
+  publishedAt: string;
+}
+
 const generateMockData = (basePrice: number) => {
   const p = basePrice;
   // User requested 5 years (60 months) of PE River charts to be meaningful
@@ -379,6 +396,158 @@ export const fetchMarketData = async (market: 'TW' | 'US'): Promise<StockDetail[
 };
 
 export const fetchRealTwseStocks = fetchMarketData;
+
+export const fetchMarketTrend = async (market: 'TW' | 'US'): Promise<MarketTrend> => {
+  const savedKeys = localStorage.getItem('alphaFlow_apiKeys');
+  let finmindKey = '';
+  let alpacaKey = '';
+  let alpacaSecret = '';
+  if (savedKeys) {
+    try {
+      const parsed = JSON.parse(savedKeys);
+      finmindKey = parsed.finmindKey || '';
+      alpacaKey = parsed.alpacaKey || '';
+      alpacaSecret = parsed.alpacaSecret || '';
+    } catch (e) {}
+  }
+
+  // Fallback default
+  const fallbackTrend: MarketTrend = {
+    symbol: market === 'TW' ? 'TAIEX' : 'SPY',
+    name: market === 'TW' ? '加權指數' : 'S&P 500 ETF',
+    price: market === 'TW' ? 21000 : 530,
+    change: '+0.5%',
+    history: Array.from({length: 20}).map((_, i) => ({
+      date: `Day ${i}`,
+      value: (market === 'TW' ? 21000 : 530) + (Math.random() - 0.5) * 500
+    }))
+  };
+
+  try {
+    if (market === 'TW') {
+      const d = new Date();
+      d.setMonth(d.getMonth() - 1);
+      const startDate = d.toISOString().split('T')[0];
+      const url = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id=TAIEX&start_date=${startDate}${finmindKey ? '&token='+finmindKey : ''}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.msg === 'success' && data.data && data.data.length > 0) {
+        const history = data.data.map((item: any) => ({
+          date: item.date,
+          value: item.close
+        }));
+        const latest = data.data[data.data.length - 1];
+        const prev = data.data[data.data.length - 2] || latest;
+        const changeVal = latest.close - prev.close;
+        const changePct = ((changeVal / prev.close) * 100).toFixed(2);
+        return {
+          symbol: 'TAIEX',
+          name: '加權指數',
+          price: latest.close,
+          change: `${changeVal >= 0 ? '+' : ''}${changePct}%`,
+          history
+        };
+      }
+    } else {
+      if (alpacaKey && alpacaSecret) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - 1);
+        const start = d.toISOString();
+        const res = await fetch(`https://data.alpaca.markets/v2/stocks/SPY/bars?timeframe=1Day&start=${start}&limit=20`, {
+          headers: {
+            'APCA-API-KEY-ID': alpacaKey,
+            'APCA-API-SECRET-KEY': alpacaSecret
+          }
+        });
+        const data = await res.json();
+        if (data.bars && data.bars.length > 0) {
+          const history = data.bars.map((item: any) => ({
+            date: item.t.split('T')[0],
+            value: item.c
+          }));
+          const latest = data.bars[data.bars.length - 1];
+          const prev = data.bars[data.bars.length - 2] || latest;
+          const changePct = (((latest.c - prev.c) / prev.c) * 100).toFixed(2);
+          return {
+            symbol: 'SPY',
+            name: 'S&P 500 ETF',
+            price: latest.c,
+            change: `${latest.c >= prev.c ? '+' : ''}${changePct}%`,
+            history
+          };
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Trend fetch error', e);
+  }
+  return fallbackTrend;
+};
+
+export const fetchMarketNews = async (market: 'TW' | 'US'): Promise<NewsArticle[]> => {
+  const savedKeys = localStorage.getItem('alphaFlow_apiKeys');
+  let finmindKey = '';
+  let alpacaKey = '';
+  let alpacaSecret = '';
+  if (savedKeys) {
+    try {
+      const parsed = JSON.parse(savedKeys);
+      finmindKey = parsed.finmindKey || '';
+      alpacaKey = parsed.alpacaKey || '';
+      alpacaSecret = parsed.alpacaSecret || '';
+    } catch (e) {}
+  }
+
+  const fallbackNews: NewsArticle[] = [
+    { id: '1', title: market === 'TW' ? '台股大盤創歷史新高，半導體領漲' : 'Fed signals potential rate cuts later this year', summary: '', url: '#', source: 'Market News', publishedAt: new Date().toISOString() },
+    { id: '2', title: market === 'TW' ? '外資買超百億，瞄準AI概念股' : 'Tech giants rally ahead of earnings reports', summary: '', url: '#', source: 'Financial Times', publishedAt: new Date().toISOString() },
+    { id: '3', title: market === 'TW' ? '央行理監事會議維持利率不變' : 'Unemployment claims drop to lowest level in months', summary: '', url: '#', source: 'Economic Daily', publishedAt: new Date().toISOString() },
+  ];
+
+  try {
+    if (market === 'TW') {
+      const d = new Date();
+      d.setDate(d.getDate() - 3);
+      const startDate = d.toISOString().split('T')[0];
+      const url = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockNews&data_id=2330&start_date=${startDate}${finmindKey ? '&token='+finmindKey : ''}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.msg === 'success' && data.data && data.data.length > 0) {
+        return data.data.slice(0, 5).map((item: any, i: number) => ({
+          id: i.toString(),
+          title: item.title,
+          summary: '',
+          url: item.link,
+          source: item.source,
+          publishedAt: item.date
+        }));
+      }
+    } else {
+      if (alpacaKey && alpacaSecret) {
+        const res = await fetch(`https://data.alpaca.markets/v1beta1/news?limit=5`, {
+          headers: {
+            'APCA-API-KEY-ID': alpacaKey,
+            'APCA-API-SECRET-KEY': alpacaSecret
+          }
+        });
+        const data = await res.json();
+        if (data.news && data.news.length > 0) {
+          return data.news.map((item: any) => ({
+            id: item.id.toString(),
+            title: item.headline,
+            summary: item.summary,
+            url: item.url,
+            source: item.source,
+            publishedAt: item.created_at
+          }));
+        }
+      }
+    }
+  } catch (e) {
+    console.error('News fetch error', e);
+  }
+  return fallbackNews;
+};
 
 export const mockUsStocks: StockDetail[] = [
   { id: 'AAPL', name: 'Apple Inc.', price: 185.5, change: '+1.2%', category: 'stable', sector: 'Technology', peRatio: 28.5, yieldRate: 0.5, dataLabel: '本益比', dataValue: '28.5x', reason: '消費電子巨頭', themes: ['科技'], ...generateMockData(185.5), aiReport: { trend: '多頭', health: '極佳', prediction: '看好' }, ...generateAdvancedMock(185.5, 28.5, 0.5, false) },

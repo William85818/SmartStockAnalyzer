@@ -11,14 +11,13 @@ import WatchlistPanel from './components/WatchlistPanel';
 import ThemesPanel from './components/ThemesPanel';
 import FilterPanel from './components/FilterPanel';
 import EtfThemesPanel from './components/EtfThemesPanel';
-import DailyFocusPanel from './components/DailyFocusPanel';
 import SettingsModal from './components/SettingsModal';
 import { Settings, Globe } from 'lucide-react';
 
-type Route = 'daily' | 'screener' | 'watchlist' | 'themes' | 'filter' | 'etfthemes';
+type Route = 'screener' | 'watchlist' | 'themes' | 'filter' | 'etfthemes';
 
 export default function App() {
-  const [activeRoute, setActiveRoute] = useState<Route>('daily');
+  const [activeRoute, setActiveRoute] = useState<Route>('screener');
   const [selectedStock, setSelectedStock] = useState<StockDetail | null>(null);
   const [watchlist, setWatchlist] = useState<string[]>([]);
   const [realStocks, setRealStocks] = useState<StockDetail[]>([]);
@@ -72,9 +71,9 @@ export default function App() {
     <div className="min-h-screen bg-[#090b14] text-slate-200 font-sans selection:bg-blue-500/30 flex flex-col md:flex-row">
       
       {/* 側邊導覽列 */}
-      {(!selectedStock && activeRoute !== 'daily') && (
+      {!selectedStock && (
       <aside className="w-full md:w-64 bg-[#0d111d] border-b md:border-b-0 md:border-r border-slate-800/60 p-6 flex flex-col z-20 shrink-0">
-        <div className="flex items-center gap-3 mb-10 cursor-pointer" onClick={() => handleNav('daily')}>
+        <div className="flex items-center gap-3 mb-10 cursor-pointer" onClick={() => handleNav('screener')}>
           <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-2 rounded-xl shadow-[0_0_15px_rgba(59,130,246,0.3)]">
             <Cpu className="text-white w-6 h-6" />
           </div>
@@ -86,18 +85,6 @@ export default function App() {
 
         <nav className="flex md:flex-col gap-2 overflow-x-auto md:overflow-visible pb-2 md:pb-0 scrollbar-hide">
           <button 
-            onClick={() => handleNav('daily')}
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-sm font-medium whitespace-nowrap ${
-              activeRoute === 'daily' 
-                ? 'bg-emerald-600/10 text-emerald-400 border border-emerald-500/20' 
-                : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 border border-transparent'
-            }`}
-          >
-            <Home className="w-5 h-5" />
-            每日焦點
-          </button>
-
-          <button 
             onClick={() => handleNav('screener')}
             className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-sm font-medium whitespace-nowrap ${
               activeRoute === 'screener' 
@@ -105,8 +92,8 @@ export default function App() {
                 : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 border border-transparent'
             }`}
           >
-            <Search className="w-5 h-5" />
-            AI 智慧選股
+            <Home className="w-5 h-5" />
+            首頁大廳
           </button>
 
           <button 
@@ -203,22 +190,9 @@ export default function App() {
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
 
       {/* 主要內容區 */}
-      <main className={`flex-1 p-6 md:p-8 xl:p-10 mx-auto w-full overflow-y-auto ${activeRoute === 'daily' || selectedStock ? 'lg:max-w-7xl' : 'lg:max-w-[1400px]'}`}>
+      <main className={`flex-1 p-6 md:p-8 xl:p-10 mx-auto w-full overflow-y-auto ${selectedStock ? 'lg:max-w-7xl' : 'lg:max-w-[1400px]'}`}>
         
-        {/* Simplified Daily header for when daily page is active */}
-        {(activeRoute === 'daily' && !selectedStock) && (
-          <div className="flex items-center gap-4 mb-8">
-            <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleNav('screener')}>
-              <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-2 rounded-xl shadow-[0_0_15px_rgba(59,130,246,0.3)]">
-                <Cpu className="text-white w-6 h-6" />
-              </div>
-              <h1 className="text-xl font-bold tracking-tight text-white hover:text-blue-400 transition-colors">前往選股面板</h1>
-            </div>
-            <div className="flex-1 h-px bg-slate-800/50"></div>
-          </div>
-        )}
-
-        {loadingRealData && activeRoute !== 'daily' ? (
+        {loadingRealData ? (
            <div className="flex h-full items-center justify-center text-slate-500">
              處理龐大市場數據中...
            </div>
@@ -232,10 +206,9 @@ export default function App() {
                 watchlist={watchlist} 
                 toggleWatchlist={toggleWatchlist} 
               />
-            ) : activeRoute === 'daily' ? (
-              <DailyFocusPanel market={market} onSelectStock={setSelectedStock} pool={realStocks.filter(s => s.category !== 'etf')} watchlist={watchlist} toggleWatchlist={toggleWatchlist} />
             ) : activeRoute === 'screener' ? (
               <ScreenerPanel 
+                market={market}
                 onSelectStock={setSelectedStock} 
                 watchlist={watchlist} 
                 toggleWatchlist={toggleWatchlist} 

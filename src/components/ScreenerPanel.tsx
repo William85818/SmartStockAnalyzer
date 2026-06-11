@@ -2,11 +2,14 @@ import React, { useState } from 'react';
 import { Search, Heart, Zap, ShieldCheck, Building2, Activity } from 'lucide-react';
 import { mockStocks, strategies, StockDetail } from '../data';
 import { motion, AnimatePresence } from 'motion/react';
+import DailyFocusPanel from './DailyFocusPanel';
 
-export default function ScreenerPanel({ onSelectStock, watchlist, toggleWatchlist }: {
+export default function ScreenerPanel({ market, onSelectStock, watchlist, toggleWatchlist, pool }: {
+  market: 'TW' | 'US';
   onSelectStock: (s: StockDetail) => void;
   watchlist: string[];
   toggleWatchlist: (id: string, e?: React.MouseEvent) => void;
+  pool: StockDetail[];
 }) {
   const [selectedStrategy, setSelectedStrategy] = useState('stable');
   const [searchQuery, setSearchQuery] = useState('');
@@ -17,7 +20,7 @@ export default function ScreenerPanel({ onSelectStock, watchlist, toggleWatchlis
     setIsAnalyzing(true);
     setResults(null);
     setTimeout(() => {
-      setResults(mockStocks.filter(s => s.category === selectedStrategy));
+      setResults(pool.filter(s => s.category === selectedStrategy));
       setIsAnalyzing(false);
     }, 1000);
   };
@@ -25,7 +28,7 @@ export default function ScreenerPanel({ onSelectStock, watchlist, toggleWatchlis
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
-    const found = mockStocks.filter(s => 
+    const found = pool.filter(s => 
       s.id.includes(searchQuery) || s.name.includes(searchQuery)
     );
     setResults(found);
@@ -33,8 +36,13 @@ export default function ScreenerPanel({ onSelectStock, watchlist, toggleWatchlis
   };
 
   return (
-    <motion.div key="screener" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="max-w-4xl">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
+    <motion.div key="screener" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="max-w-7xl mx-auto">
+      
+      {/* 整合的每日焦點區塊 */}
+      <DailyFocusPanel market={market} onSelectStock={onSelectStock} pool={pool} watchlist={watchlist} toggleWatchlist={toggleWatchlist} />
+      
+      {/* AI 選股區塊 */}
+      <div className="mt-8 border-t border-slate-800 pt-12 flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
         <div>
           <h2 className="text-3xl font-bold text-white tracking-tight mb-2">AI 智慧選股</h2>
           <p className="text-slate-400">根據您的投資偏好，演算法將掃描市場並給出最佳量化推薦。</p>

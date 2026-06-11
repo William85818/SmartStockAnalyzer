@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Heart, Globe, TrendingUp, TrendingDown, Clock } from 'lucide-react';
-import { StockDetail } from '../data';
+import { Heart, Globe, TrendingUp, TrendingDown, Clock, Activity, Newspaper, ChevronRight } from 'lucide-react';
+import { StockDetail, fetchMarketTrend, fetchMarketNews, MarketTrend, NewsArticle } from '../data';
 import { motion, AnimatePresence } from 'motion/react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function DailyFocusPanel({ market, onSelectStock, pool, watchlist, toggleWatchlist }: {
   market: 'TW' | 'US';
@@ -11,8 +12,10 @@ export default function DailyFocusPanel({ market, onSelectStock, pool, watchlist
   toggleWatchlist: (id: string, e?: React.MouseEvent) => void;
 }) {
   const [selectedTab, setSelectedTab] = useState<'top'|'hot'>('top');
-  const [searchQuery, setSearchQuery] = useState('');
   const [results, setResults] = useState<StockDetail[]>([]);
+  const [trend, setTrend] = useState<MarketTrend | null>(null);
+  const [news, setNews] = useState<NewsArticle[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let filtered = pool;
@@ -21,105 +24,166 @@ export default function DailyFocusPanel({ market, onSelectStock, pool, watchlist
     } else {
       filtered = pool.filter(s => s.category === 'high-risk' || s.category === 'stable');
     }
+    setResults(filtered.slice(0, 4)); // max 4 items for compact view
+  }, [pool, selectedTab]);
 
-    if (searchQuery.trim()) {
-      filtered = filtered.filter(s => s.id.includes(searchQuery) || s.name.includes(searchQuery));
-    }
-
-    setResults(filtered.slice(0, 10)); // max 10 items
-  }, [pool, selectedTab, searchQuery]);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-  };
+  useEffect(() => {
+    setIsLoading(true);
+    Promise.all([
+      fetchMarketTrend(market),
+      fetchMarketNews(market)
+    ]).then(([trendData, newsData]) => {
+      setTrend(trendData);
+      setNews(newsData);
+      setIsLoading(false);
+    });
+  }, [market]);
 
   const tabs = [
-    { id: 'top', label: '今日強勢股', icon: TrendingUp, desc: '漲幅居前標的' },
-    { id: 'hot', label: '熱門交易', icon: TrendingDown, desc: '成交量大或關注度高' }
+    { id: 'top', label: '今日強勢股', icon: TrendingUp },
+    { id: 'hot', label: '熱門交易', icon: TrendingDown }
   ] as const;
 
   return (
-    <motion.div key="daily-focus" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="max-w-4xl mx-auto pb-10">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
-        <div>
-          <h2 className="text-3xl font-bold text-white tracking-tight mb-2 flex items-center gap-2">
-            <Globe className="text-cyan-400" /> {market === 'TW' ? '台股每日焦點' : '美股每日焦點'}
-          </h2>
-          <p className="text-slate-400">獲取即時市場動態與今日精選標的。</p>
-        </div>
-        
-        <form onSubmit={handleSearch} className="relative w-full md:w-64">
-          <input 
-            type="text" 
-            placeholder="代號或名稱" 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#111624] border border-slate-700 text-white pl-4 pr-10 py-2.5 rounded-full outline-none focus:border-blue-500 transition-colors"
-          />
-          <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
-            <Search className="w-5 h-5" />
-          </button>
-        </form>
+    <motion.div key="daily-focus" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="w-full">
+      <div className="flex items-center gap-2 mb-8">
+        <Globe className="w-6 h-6 text-cyan-400" /> 
+        <h2 className="text-2xl font-bold text-white tracking-tight">
+          {market === 'TW' ? '台股每日焦點' : '美股每日焦點'}
+        </h2>
       </div>
 
-      <div className="bg-[#111624] rounded-2xl border border-slate-800 p-6 md:p-8 shadow-xl mb-12">
-        <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-6 border-b border-slate-800 pb-4">
-          焦點看板切換
-        </h3>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {tabs.map(s => {
-            const Icon = s.icon;
-            const isActive = selectedTab === s.id;
-            return (
-              <button key={s.id} onClick={() => setSelectedTab(s.id)} className={`text-left p-5 rounded-xl border transition-all duration-300 ${isActive ? 'bg-cyan-600/10 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.15)] ring-1 ring-cyan-500/50' : 'bg-[#0d101a] border-slate-800 hover:border-slate-600 hover:bg-slate-800/50'}`}>
-                <Icon className={`w-6 h-6 mb-3 ${isActive ? 'text-cyan-400' : 'text-slate-500'}`} />
-                <h4 className={`font-bold mb-1 ${isActive ? 'text-white' : 'text-slate-300'}`}>{s.label}</h4>
-                <p className={`text-xs ${isActive ? 'text-cyan-200/80' : 'text-slate-500'}`}>{s.desc}</p>
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      <AnimatePresence>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-          <h3 className="text-xl font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-4">
-            <Clock className="w-5 h-5 text-cyan-500"/> 最新報價 ({results.length})
+        {/* 左側：大盤走勢 */}
+        <div className="xl:col-span-1 bg-[#111624] rounded-2xl border border-slate-800 p-6 shadow-xl flex flex-col">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
+            <Activity className="w-4 h-4 text-emerald-400" /> 市場走勢
           </h3>
-          {results.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {results.map((stock, i) => (
-                <motion.div key={stock.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.1 }} onClick={() => onSelectStock(stock)} className="bg-[#111624] border border-slate-800 hover:border-cyan-500/50 p-5 rounded-2xl cursor-pointer transition-all hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] group relative overflow-hidden">
-                  <div className="flex justify-between items-start mb-4 relative z-10">
+          
+          {isLoading || !trend ? (
+             <div className="flex-1 flex items-center justify-center text-slate-500 text-sm">載入走勢中...</div>
+          ) : (
+            <>
+              <div className="flex items-end justify-between mb-6">
+                <div>
+                  <p className="text-xs text-slate-500 mb-1">{trend.name} ({trend.symbol})</p>
+                  <p className="text-3xl font-mono font-bold text-white">{trend.price.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
+                </div>
+                <div className={`px-2 py-1 rounded text-sm font-bold ${trend.change.startsWith('+') ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                  {trend.change}
+                </div>
+              </div>
+              <div className="h-[180px] w-full -ml-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={trend.history}>
+                    <defs>
+                      <linearGradient id="trendColor" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={trend.change.startsWith('+') ? '#10b981' : '#f43f5e'} stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor={trend.change.startsWith('+') ? '#10b981' : '#f43f5e'} stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                    <XAxis dataKey="date" hide />
+                    <YAxis domain={['auto', 'auto']} hide />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px' }}
+                      itemStyle={{ color: '#e2e8f0' }}
+                      labelStyle={{ color: '#94a3b8' }}
+                      formatter={(val: number) => [val.toFixed(2), '指數']}
+                    />
+                    <Area type="monotone" dataKey="value" stroke={trend.change.startsWith('+') ? '#10b981' : '#f43f5e'} strokeWidth={3} fill="url(#trendColor)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* 中間：即時新聞 */}
+        <div className="xl:col-span-1 bg-[#111624] rounded-2xl border border-slate-800 p-6 shadow-xl flex flex-col">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
+            <Newspaper className="w-4 h-4 text-blue-400" /> 即時市場新聞
+          </h3>
+          
+          {isLoading ? (
+             <div className="flex-1 flex items-center justify-center text-slate-500 text-sm">載入新聞中...</div>
+          ) : (
+            <div className="flex flex-col gap-4 overflow-y-auto pr-2 max-h-[250px] scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+              {news.map(item => (
+                <a key={item.id} href={item.url} target="_blank" rel="noreferrer" className="group block">
+                  <div className="flex gap-3 items-start">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 shrink-0 group-hover:scale-150 transition-transform"></div>
                     <div>
-                      <span className="inline-block px-2.5 py-1 bg-[#1a2133] text-slate-300 text-xs font-mono font-medium rounded mb-2 border border-slate-700/50">{stock.id}</span>
-                      <h4 className="text-xl font-bold text-white">{stock.name}</h4>
+                      <h4 className="text-sm font-medium text-slate-200 group-hover:text-blue-400 transition-colors line-clamp-2 leading-snug">
+                        {item.title}
+                      </h4>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] text-slate-500 font-mono">{item.source}</span>
+                        <span className="text-[10px] text-slate-600">• {new Date(item.publishedAt).toLocaleDateString()}</span>
+                      </div>
                     </div>
-                    <button onClick={(e) => toggleWatchlist(stock.id, e)} className="p-1 -mr-1 hover:bg-slate-800 rounded-full transition-colors z-20">
-                      <Heart className={`w-5 h-5 ${watchlist.includes(stock.id) ? 'fill-rose-500 text-rose-500' : 'text-slate-600'}`} />
-                    </button>
                   </div>
-                  <p className="text-sm font-light text-slate-400 mb-6 line-clamp-2 relative z-10">{stock.reason}</p>
-                  <div className="flex items-end justify-between border-t border-slate-800/80 pt-4 relative z-10">
+                </a>
+              ))}
+              {news.length === 0 && <div className="text-slate-500 text-sm py-4">目前無相關新聞</div>}
+            </div>
+          )}
+        </div>
+
+        {/* 右側：精選個股 */}
+        <div className="xl:col-span-1 bg-[#111624] rounded-2xl border border-slate-800 p-6 shadow-xl flex flex-col">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex bg-[#0d101a] rounded-lg p-1 border border-slate-800">
+              {tabs.map(t => (
+                <button 
+                  key={t.id} 
+                  onClick={() => setSelectedTab(t.id)}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors flex items-center gap-1 ${selectedTab === t.id ? 'bg-cyan-600/20 text-cyan-400' : 'text-slate-500 hover:text-slate-300'}`}
+                >
+                  <t.icon className="w-3 h-3" /> {t.label}
+                </button>
+              ))}
+            </div>
+            <button className="p-1 text-slate-500 hover:text-white transition-colors">
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-3 overflow-y-auto max-h-[250px] scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent pr-2">
+            <AnimatePresence mode="popLayout">
+              {results.map((stock, i) => (
+                <motion.div 
+                  key={stock.id} 
+                  initial={{ opacity: 0, x: 20 }} 
+                  animate={{ opacity: 1, x: 0 }} 
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ delay: i * 0.05 }} 
+                  onClick={() => onSelectStock(stock)} 
+                  className="bg-slate-900/50 hover:bg-slate-800/80 border border-slate-800/80 hover:border-cyan-500/50 p-3 rounded-xl cursor-pointer transition-all flex items-center justify-between group"
+                >
+                  <div className="flex items-center gap-3">
+                    <button onClick={(e) => toggleWatchlist(stock.id, e)} className="p-1.5 hover:bg-slate-700 rounded-full transition-colors">
+                      <Heart className={`w-4 h-4 ${watchlist.includes(stock.id) ? 'fill-rose-500 text-rose-500' : 'text-slate-600'}`} />
+                    </button>
                     <div>
-                      <p className="text-xs text-slate-500 mb-1 tracking-wider uppercase font-medium">{stock.dataLabel}</p>
-                      <p className={`text-sm font-mono ${stock.change.startsWith('+') ? 'text-emerald-400' : stock.change.startsWith('-') ? 'text-rose-400' : 'text-slate-400'}`}>
-                        {stock.change}
-                      </p>
+                      <h4 className="text-sm font-bold text-white group-hover:text-cyan-400 transition-colors">{stock.name}</h4>
+                      <p className="text-[10px] text-slate-500 font-mono">{stock.id}</p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-mono font-bold text-white leading-none">{stock.price}</p>
-                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-mono font-bold text-white">{stock.price}</p>
+                    <p className={`text-[11px] font-mono font-medium ${stock.change.startsWith('+') ? 'text-emerald-400' : stock.change.startsWith('-') ? 'text-rose-400' : 'text-slate-400'}`}>
+                      {stock.change}
+                    </p>
                   </div>
                 </motion.div>
               ))}
-            </div>
-          ) : (
-            <div className="text-slate-400 py-10 text-center">沒有可用標的</div>
-          )}
-        </motion.div>
-      </AnimatePresence>
+            </AnimatePresence>
+          </div>
+        </div>
+
+      </div>
     </motion.div>
   );
 }
