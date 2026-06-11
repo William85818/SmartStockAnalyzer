@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Cpu, Search, Heart, Flame, Filter, LayoutDashboard, PieChart, Home
 } from 'lucide-react';
-import { mockStocks, StockDetail, fetchRealTwseStocks } from './data';
+import { mockStocks, mockUsStocks, StockDetail, fetchRealTwseStocks } from './data';
 
 import ScreenerPanel from './components/ScreenerPanel';
 import StockDetailPanel from './components/StockDetailPanel';
@@ -43,10 +43,16 @@ export default function App() {
       setLoadingRealData(true);
       try {
         const data = await fetchRealTwseStocks(market);
-        setRealStocks([...mockStocks, ...data]); 
+        const baseMocks = market === 'US' ? mockUsStocks : mockStocks;
+        
+        // Remove duplicates if the fetched data already contains the mock stock
+        const dataIds = new Set(data.map(d => d.id));
+        const filteredMocks = baseMocks.filter(m => !dataIds.has(m.id));
+
+        setRealStocks([...filteredMocks, ...data]); 
       } catch (e) {
         console.error(e);
-        setRealStocks(mockStocks);
+        setRealStocks(market === 'US' ? mockUsStocks : mockStocks);
       }
       setLoadingRealData(false);
     };
