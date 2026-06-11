@@ -101,7 +101,7 @@ export default function StockDetailPanel({ stock: initialStock, setStock, watchl
         // OpenAI
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': \`Bearer \${llmKey}\` },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${llmKey}` },
           body: JSON.stringify({
             model: 'gpt-4o-mini',
             messages: [{ role: 'user', content: prompt }]
@@ -111,7 +111,7 @@ export default function StockDetailPanel({ stock: initialStock, setStock, watchl
         responseText = data.choices[0].message.content;
       } else {
         // Gemini
-        const res = await fetch(\`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=\${llmKey}\`, {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${llmKey}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
