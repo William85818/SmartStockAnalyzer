@@ -9,7 +9,8 @@ import {
   fetchSingleStockDetail, 
   mockUsStocks, 
   mockStocks,
-  checkIsDemoMode
+  checkIsDemoMode,
+  cleanupFirebaseCache
 } from './data';
 
 import ScreenerPanel from './components/ScreenerPanel';
@@ -60,6 +61,8 @@ export default function App() {
       setLoadingRealData(false);
     };
     loadData();
+    // Cleanup old Firebase cache entries
+    cleanupFirebaseCache();
   }, [market]);
 
   const toggleWatchlist = (stockId: string, e?: React.MouseEvent) => {
@@ -259,7 +262,8 @@ export default function App() {
                 market={market}
                 onSelectStock={(s) => { handleSelectStock(s); }}
                 watchlist={watchlist} 
-                toggleWatchlist={toggleWatchlist} 
+                toggleWatchlist={toggleWatchlist}
+                pool={realStocks}
               />
             ) : activeRoute === 'filter' ? (
               <FilterPanel 

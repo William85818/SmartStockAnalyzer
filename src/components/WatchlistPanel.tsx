@@ -72,6 +72,7 @@ export default function WatchlistPanel({
                   </div>
                   <div className="text-right">
                       <p className="text-2xl font-mono font-bold text-white leading-none">{stock.isLightweight ? '---' : stock.price}</p>
+                      {stock.priceUpdatedAt && <p className="text-[10px] text-slate-500 mt-1 font-mono">{new Date(stock.priceUpdatedAt).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>}
                   </div>
                 </div>
               </motion.div>

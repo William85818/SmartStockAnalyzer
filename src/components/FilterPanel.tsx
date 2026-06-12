@@ -23,10 +23,10 @@ export default function FilterPanel({ onSelectStock, watchlist, toggleWatchlist,
     return pool.filter(stock => {
       const matchSector = selectedSector === 'All' || stock.sector === selectedSector;
       const matchSearch = stock.name.toLowerCase().includes(searchQuery.toLowerCase()) || stock.id.includes(searchQuery);
-      const matchPe = stock.peRatio <= maxPe;
-      const matchYield = stock.yieldRate >= minYield;
+      const matchPe = stock.isLightweight || stock.peRatio <= maxPe;
+      const matchYield = stock.isLightweight || stock.yieldRate >= minYield;
       return matchSector && matchSearch && matchPe && matchYield;
-    }).slice(0, 10);
+    }).slice(0, 50);
   }, [selectedSector, searchQuery, maxPe, minYield, pool]);
 
   return (
@@ -36,7 +36,19 @@ export default function FilterPanel({ onSelectStock, watchlist, toggleWatchlist,
           <Filter className="w-8 h-8 text-purple-500" />
           進階篩選
         </h2>
-        <p className="text-slate-400">自訂篩選條件，精準找出潛力標的。（最多顯示 10 檔）</p>
+        <p className="text-slate-400">自訂篩選條件，精準找出潛力標的。（最多顯示 50 檔）</p>
+      </div>
+
+      {/* Search bar */}
+      <div className="mb-6 relative">
+        <input 
+          type="text" 
+          placeholder="搜尋股票代號或名稱（如 2330、台積電、00929）" 
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full bg-[#111624] border border-slate-700 text-white pl-12 pr-4 py-3 rounded-xl outline-none focus:border-purple-500 transition-colors"
+        />
+        <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
       </div>
 
       <div className="bg-[#111624] border border-slate-800 rounded-3xl p-6 md:p-8 shadow-xl mb-10 flex flex-col md:flex-row gap-6 items-end">
@@ -115,7 +127,10 @@ export default function FilterPanel({ onSelectStock, watchlist, toggleWatchlist,
                         </div>
                       </td>
                       <td className="px-6 py-4 text-slate-400">{stock.sector}</td>
-                      <td className="px-6 py-4 font-mono font-medium text-white">{stock.isLightweight ? '---' : stock.price}</td>
+                      <td className="px-6 py-4 font-mono font-medium text-white">
+                        {stock.isLightweight ? '---' : stock.price}
+                        {stock.priceUpdatedAt && <span className="text-[10px] text-slate-500 ml-1.5">{new Date(stock.priceUpdatedAt).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}</span>}
+                      </td>
                       <td className="px-6 py-4 font-mono text-blue-400">{stock.peRatio}x</td>
                       <td className="px-6 py-4 font-mono text-emerald-400">{stock.yieldRate}%</td>
                       <td className="px-6 py-4 text-center">

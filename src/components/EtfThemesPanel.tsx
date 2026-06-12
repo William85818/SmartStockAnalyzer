@@ -1,23 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { PieChart, Heart, ChevronRight } from 'lucide-react';
+import { PieChart, Heart, ChevronRight, Search } from 'lucide-react';
 import { mockEtfs, mockEtfsUs, etfThemes, etfThemesUs, StockDetail } from '../data';
 
-export default function EtfThemesPanel({ market, onSelectStock, watchlist, toggleWatchlist }: {
+export default function EtfThemesPanel({ market, onSelectStock, watchlist, toggleWatchlist, pool }: {
   market: 'TW' | 'US';
   onSelectStock: (stock: StockDetail) => void;
   watchlist: string[];
   toggleWatchlist: (id: string, e?: React.MouseEvent) => void;
+  pool?: StockDetail[];
 }) {
   const [activeTheme, setActiveTheme] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const currentThemes = market === 'US' ? etfThemesUs : etfThemes;
-  const currentEtfs = market === 'US' ? mockEtfsUs : mockEtfs;
+  
+  // Merge hardcoded mockEtfs with dynamic ETFs from pool
+  const allEtfs = useMemo(() => {
+    const base = market === 'US' ? mockEtfsUs : mockEtfs;
+    if (!pool) return base;
+    const baseIds = new Set(base.map(e => e.id));
+    const poolEtfs = pool.filter(s => s.category === 'etf' && !baseIds.has(s.id));
+    return [...base, ...poolEtfs];
+  }, [market, pool]);
 
   const activeThemeObj = currentThemes.find(t => t.id === activeTheme);
   const themeEtfs = activeTheme 
-    ? currentEtfs.filter(s => s.themes.includes(activeThemeObj?.name || ''))
+    ? allEtfs.filter(s => s.themes?.includes(activeThemeObj?.name || '') || s.sector?.includes('ETF'))
     : [];
+  
+  // Search filtering
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) return null;
+    return allEtfs.filter(s => 
+      s.id.includes(searchQuery) || s.name.toLowerCase().includes(searchQuery.toLowerCase())
+    ).slice(0, 30);
+  }, [searchQuery, allEtfs]);
 
   return (
     <motion.div key="etfthemes" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="max-w-5xl">
@@ -26,7 +44,19 @@ export default function EtfThemesPanel({ market, onSelectStock, watchlist, toggl
           <PieChart className="w-8 h-8 text-cyan-400" />
           ETF 題材精選
         </h2>
-        <p className="text-slate-400">掌握大環境趨勢，挑選適合您資產配置的 ETF。</p>
+        <p className="text-slate-400">掌握大環境趨勢，挑選適合您資產配置的 ETF。（共 {allEtfs.length} 檔）</p>
+      </div>
+
+      {/* ETF Search */}
+      <div className="mb-8 relative">
+        <input 
+          type="text" 
+          placeholder="搜尋 ETF 代號或名稱（如 00929）" 
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full bg-[#111624] border border-slate-700 text-white pl-12 pr-4 py-3 rounded-xl outline-none focus:border-cyan-500 transition-colors"
+        />
+        <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
@@ -53,6 +83,54 @@ export default function EtfThemesPanel({ market, onSelectStock, watchlist, toggl
           </motion.button>
         ))}
       </div>
+
+      {/* Search Results */}
+      {searchResults && searchResults.length > 0 && (
+        <div className="bg-[#111624] border border-slate-800 rounded-3xl p-6 md:p-8 shadow-xl mb-10">
+          <h3 className="text-xl font-bold text-white mb-6 border-b border-slate-800 pb-4">
+            搜尋結果（{searchResults.length} 檔）
+          </h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {searchResults.map((etf, i) => (
+              <motion.button 
+                key={etf.id} 
+                initial={{ opacity: 0, y: 10 }} 
+                animate={{ opacity: 1, y: 0 }} 
+                transition={{ delay: i * 0.03 }} 
+                onClick={() => onSelectStock(etf)}
+                className="bg-[#0d101a] border border-slate-800 hover:border-cyan-500/50 p-6 rounded-2xl transition-all group text-left"
+              >
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <span className="text-xs font-mono px-2 py-0.5 bg-slate-800 text-slate-300 rounded mr-2 border border-slate-700">{etf.id}</span>
+                    <span className="text-xl font-bold text-white group-hover:text-cyan-400 transition-colors">{etf.name}</span>
+                  </div>
+                  <button onClick={(e) => toggleWatchlist(etf.id, e)} className="text-slate-600 hover:text-rose-500 transition-colors bg-slate-800/50 p-1.5 rounded-full z-10 relative">
+                    <Heart className={`w-5 h-5 ${watchlist.includes(etf.id) ? 'fill-rose-500 text-rose-500' : ''}`} />
+                  </button>
+                </div>
+                <p className="text-sm text-slate-400 mb-3">{etf.reason || etf.sector}</p>
+                <div className="flex gap-4 pt-3 border-t border-slate-800/80">
+                  <div>
+                    <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">參考價</p>
+                    <p className="text-lg font-mono text-white">{etf.isLightweight ? '---' : etf.price}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">產業</p>
+                    <p className="text-lg font-mono text-slate-300">{etf.sector}</p>
+                  </div>
+                </div>
+              </motion.button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {searchResults && searchResults.length === 0 && (
+        <div className="bg-[#111624] border border-slate-800 rounded-3xl p-10 text-center text-slate-500 mb-10">
+          沒有找到符合「{searchQuery}」的 ETF。
+        </div>
+      )}
 
       <AnimatePresence mode="wait">
         {activeTheme && (

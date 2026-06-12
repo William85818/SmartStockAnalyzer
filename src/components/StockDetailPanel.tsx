@@ -169,6 +169,7 @@ export default function StockDetailPanel({ stock: initialStock, setStock, watchl
           <p className={`text-sm font-bold mt-1 inline-block px-2 py-0.5 rounded ${stock.change.startsWith('+') ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
             {stock.change} (今日)
           </p>
+          {stock.priceUpdatedAt && <p className="text-[11px] text-slate-500 mt-1.5 font-mono">更新於 {new Date(stock.priceUpdatedAt).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>}
         </div>
       </header>
 

@@ -1,6 +1,32 @@
 import { ShieldCheck, Zap, Building2 } from 'lucide-react';
 import { db } from './firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
+
+// Firebase cache cleanup: delete entries older than 7 days
+export const cleanupFirebaseCache = async () => {
+  try {
+    const collections = ['stockPrices', 'stockNews'];
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    for (const col of collections) {
+      const snapshot = await getDocs(collection(db, col));
+      const deletePromises: Promise<void>[] = [];
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (data.updatedAt && new Date(data.updatedAt) < sevenDaysAgo) {
+          deletePromises.push(deleteDoc(doc(db, col, docSnap.id)));
+        }
+      });
+      await Promise.all(deletePromises);
+      if (deletePromises.length > 0) {
+        console.log(`[Firebase Cleanup] Deleted ${deletePromises.length} old entries from ${col}`);
+      }
+    }
+  } catch (e) {
+    console.error('[Firebase Cleanup] Error:', e);
+  }
+};
 
 export interface StockDetail {
   id: string;
@@ -59,6 +85,7 @@ export interface StockDetail {
   };
   institutionalSummary: string;
   isLightweight?: boolean;
+  priceUpdatedAt?: string;
 }
 
 export interface MarketTrend {
@@ -459,6 +486,7 @@ export const fetchMarketData = async (market: 'TW' | 'US'): Promise<StockDetail[
               price: p,
               change: `${isUp ? '+' : ''}${changePct}%`,
               dataValue: `NT$${p}`,
+            priceUpdatedAt: new Date().toISOString(),
               ...generateMockData(p),
               aiReport: {
                 ...mockStock.aiReport,
@@ -525,7 +553,8 @@ export const fetchAllStockSymbols = async (market: 'TW' | 'US'): Promise<StockDe
          .filter((d: any) => !mockIds.has(d.stock_id))
          .map((d: any, i: number) => {
           const isStable = i % 2 === 0;
-          const category = d.industry_category === 'ETF' ? 'etf' : (isStable ? 'stable' : 'high-risk');
+          const isEtf = d.industry_category === 'ETF' || d.industry_category.includes('ETF') || d.industry_category.includes('指數股票型基金');
+          const category = isEtf ? 'etf' : (isStable ? 'stable' : 'high-risk');
           return {
              id: d.stock_id,
              name: d.stock_name,
