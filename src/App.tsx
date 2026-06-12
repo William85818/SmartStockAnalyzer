@@ -104,7 +104,7 @@ export default function App() {
       {/* DEMO MODE Banner */}
       {user?.role === 'guest' && !isLoading && (
         <div className="bg-orange-500 text-white py-1.5 px-4 text-center text-xs font-bold tracking-widest flex items-center justify-center gap-2 relative z-50 shadow-md w-full">
-          <AlertTriangle className="w-4 h-4" /> DEMO MODE (訪客唯讀模式) - 您正在瀏覽昨日的快取歷史資料，請登入或升級會員獲取即時大數據分析！
+          <AlertTriangle className="w-4 h-4" /> DEMO MODE (訪客唯讀模式) - 您正在瀏覽近期的快取歷史資料，升級會員即可解鎖即時大數據與 AI 個股分析等專屬功能！
         </div>
       )}
 
