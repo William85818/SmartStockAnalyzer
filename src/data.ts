@@ -375,8 +375,7 @@ export const mockEtfsUs: StockDetail[] = [
 export const strategies = [
   { id: 'stable', label: '穩健成長', icon: ShieldCheck, desc: '大型權值股，護城河深厚' },
   { id: 'high-risk', label: '高風險高報酬', icon: Zap, desc: '動能強勢，短期爆發力高' },
-  { id: 'value', label: '價值投資', icon: Building2, desc: '低基期、高殖利率，穩定配息' },
-  { id: 'etf', label: 'ETF 指數投資', icon: ShieldCheck, desc: '分散風險，追蹤大盤或特定主題' }
+  { id: 'value', label: '價值投資', icon: Building2, desc: '低基期、高殖利率，穩定配息' }
 ];
 
 export const topThemes = [
@@ -541,6 +540,40 @@ export const checkIsDemoMode = (market: 'TW' | 'US'): boolean => {
   }
 };
 
+const fetchAndUpdateStockPrice = async (id: string, finmindKey: string): Promise<{ price: number; change: string; updatedAt: string } | null> => {
+  try {
+    const todayStr = new Date().toISOString().split('T')[0];
+    let d = new Date();
+    d.setDate(d.getDate() - 20);
+    const startStr = d.toISOString().split('T')[0];
+    const url = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id=${id}&start_date=${startStr}&end_date=${todayStr}${finmindKey ? `&token=${finmindKey}` : ''}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const cacheTimestamp = new Date().toISOString();
+    
+    if (data.msg === 'success' && data.data && data.data.length >= 2) {
+      const docRef = doc(db, 'stockPrices', id);
+      await setDoc(docRef, { updatedAt: cacheTimestamp, payload: data });
+      console.log(`[Firebase Saved Background] ${id}`);
+      
+      const latest = data.data[data.data.length - 1];
+      const prev = data.data[data.data.length - 2];
+      const p = latest.close;
+      const prevP = prev.close;
+      const changePct = ((p - prevP) / prevP * 100).toFixed(2);
+      const isUp = p >= prevP;
+      return {
+        price: p,
+        change: `${isUp ? '+' : ''}${changePct}%`,
+        updatedAt: cacheTimestamp
+      };
+    }
+  } catch (e) {
+    console.error(`Failed to fetch and update price for ${id}`, e);
+  }
+  return null;
+};
+
 // 抓取全市場股票代碼
 export const fetchAllStockSymbols = async (market: 'TW' | 'US'): Promise<StockDetail[]> => {
   if (market === 'US') {
@@ -548,7 +581,102 @@ export const fetchAllStockSymbols = async (market: 'TW' | 'US'): Promise<StockDe
   }
   
   try {
-    // localStorage cache with 24-hour expiry
+    const savedKeys = localStorage.getItem('alphaFlow_apiKeys');
+    let finmindKey = '';
+    try { finmindKey = savedKeys ? JSON.parse(savedKeys).finmindKey : ''; } catch(e){}
+
+    // 核心個股清單 (mockStocks, mockEtfs, watchlist)
+    const savedWatchlist = localStorage.getItem('alphaFlow_watchlist');
+    let watchlistIds: string[] = [];
+    if (savedWatchlist) {
+      try { watchlistIds = JSON.parse(savedWatchlist); } catch(e){}
+    }
+    const coreStockIds = Array.from(new Set<string>([
+      ...mockStocks.map(s => s.id),
+      ...mockEtfs.map(s => s.id),
+      ...watchlistIds
+    ]));
+
+    // 1. Firebase 單筆並發讀取快取 (避免 getDocs 權限被擋)
+    const cachedPricesMap = new Map<string, { price: number; change: string; updatedAt: string }>();
+    
+    const docRefs = coreStockIds.map(id => getDoc(doc(db, 'stockPrices', id)));
+    const docSnaps = await Promise.all(docRefs.map(p => p.catch(e => null))); // catch individual errors
+    
+    docSnaps.forEach((docSnap, index) => {
+      if (docSnap && docSnap.exists()) {
+        const id = coreStockIds[index];
+        const cache = docSnap.data();
+        if (cache && cache.payload && cache.payload.data && cache.payload.data.length > 0) {
+          const dataList = cache.payload.data;
+          const latest = dataList[dataList.length - 1];
+          const p = latest.close;
+          let changePct = '+0.0%';
+          if (dataList.length >= 2) {
+            const prev = dataList[dataList.length - 2];
+            const prevP = prev.close;
+            if (prevP > 0) {
+              const diff = ((p - prevP) / prevP * 100).toFixed(2);
+              const isUp = p >= prevP;
+              changePct = `${isUp ? '+' : ''}${diff}%`;
+            }
+          }
+          cachedPricesMap.set(id, {
+            price: p,
+            change: changePct,
+            updatedAt: cache.updatedAt
+          });
+        }
+      }
+    });
+
+    // 2. 若核心個股無快取或已過期，呼叫 API 獲取
+    const apiFetchPromises: Promise<void>[] = [];
+    const updatedCorePrices = new Map<string, { price: number; change: string; updatedAt: string }>();
+
+    for (const id of coreStockIds) {
+      const cached = cachedPricesMap.get(id);
+      const isExpired = !cached || (Date.now() - new Date(cached.updatedAt).getTime()) >= 24 * 60 * 60 * 1000;
+      if (isExpired) {
+        apiFetchPromises.push((async () => {
+          const res = await fetchAndUpdateStockPrice(id, finmindKey);
+          if (res) {
+            updatedCorePrices.set(id, res);
+          }
+        })());
+      }
+    }
+
+    if (apiFetchPromises.length > 0) {
+      console.log(`[Lobby Fetch] Fetching ${apiFetchPromises.length} missing/expired core stocks from API...`);
+      await Promise.all(apiFetchPromises);
+    }
+
+    // 更新現有靜態 mock 清單
+    const applyPriceUpdate = (stock: StockDetail) => {
+      const apiUpdated = updatedCorePrices.get(stock.id);
+      if (apiUpdated) {
+        stock.price = apiUpdated.price;
+        stock.change = apiUpdated.change;
+        stock.priceUpdatedAt = apiUpdated.updatedAt;
+        stock.dataValue = `NT$${apiUpdated.price}`;
+        stock.isLightweight = false;
+        return;
+      }
+      const cached = cachedPricesMap.get(stock.id);
+      if (cached) {
+        stock.price = cached.price;
+        stock.change = cached.change;
+        stock.priceUpdatedAt = cached.updatedAt;
+        stock.dataValue = `NT$${cached.price}`;
+        stock.isLightweight = false;
+      }
+    };
+
+    mockStocks.forEach(applyPriceUpdate);
+    mockEtfs.forEach(applyPriceUpdate);
+
+    // localStorage cache with 24-hour expiry for stock symbols
     const cachedStr = localStorage.getItem('finmind_all_stocks');
     const cacheTime = localStorage.getItem('finmind_all_stocks_time');
     const isCacheValid = cachedStr && cacheTime && (Date.now() - Number(cacheTime)) < 24 * 60 * 60 * 1000;
@@ -592,18 +720,29 @@ export const fetchAllStockSymbols = async (market: 'TW' | 'US'): Promise<StockDe
           if (d.industry_category.includes('航運')) sectorThemes.push('航運');
           if (d.industry_category.includes('生技') || d.industry_category.includes('醫療')) sectorThemes.push('生技醫療');
           if (d.industry_category.includes('食品')) sectorThemes.push('食品');
+
+          // Check if this lightweight stock has a cached price in Firestore or updated
+          const apiUpdated = updatedCorePrices.get(d.stock_id);
+          const cached = cachedPricesMap.get(d.stock_id);
+          const activePriceInfo = apiUpdated || cached;
+          
+          const price = activePriceInfo ? activePriceInfo.price : 0;
+          const change = activePriceInfo ? activePriceInfo.change : '-';
+          const priceUpdatedAt = activePriceInfo ? activePriceInfo.updatedAt : undefined;
+          const isLightweight = !activePriceInfo;
+
           return {
              id: d.stock_id,
              name: d.stock_name,
-             price: 0,
-             change: '-',
+             price,
+             change,
              category,
              sector: d.industry_category,
              peRatio: 0,
              yieldRate: 0,
              dataLabel: '產業',
              dataValue: d.industry_category,
-             reason: '點擊以載入最新資料',
+             reason: isLightweight ? '點擊以載入最新資料' : '已從資料庫載入最新資料',
              themes: sectorThemes,
              peRiverData: [],
              institutionalData: [],
@@ -616,7 +755,8 @@ export const fetchAllStockSymbols = async (market: 'TW' | 'US'): Promise<StockDe
              revenueData: [],
              technicalInfo: { macd: '', kd: '', ma: '' },
              institutionalSummary: '',
-             isLightweight: true
+             isLightweight,
+             priceUpdatedAt
           } as StockDetail;
        });
        return [...mockStocks, ...lightweightStocks];
