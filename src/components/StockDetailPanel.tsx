@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, Heart, TrendingUp, BarChart3, Activity, Target, Landmark, Newspaper, FileSearch, ShieldAlert, BrainCircuit } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, Legend, ReferenceLine, ComposedChart } from 'recharts';
+import { ArrowLeft, Heart, TrendingUp, BarChart3, Activity, Target, Landmark, Newspaper, FileSearch, ShieldAlert, BrainCircuit, Info } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, Legend, ReferenceLine, ComposedChart, Line } from 'recharts';
 import { StockDetail } from '../data';
 
 const CandlestickShape = (props: any) => {
@@ -9,26 +9,12 @@ const CandlestickShape = (props: any) => {
   const isGreen = close >= open;
   const color = isGreen ? '#ef4444' : '#22c55e'; // In Taiwan, Red is UP, Green is DOWN
   
-  // y scale maps domain to pixels. The props give bounding box of the Bar.
-  // Using custom logic since recharts shapes can be complicated, but we receive standardized bounding coordinates if we map it right.
-  // Alternatively, map a stacked bar.
-  // To keep it simple, we draw primitive SVG lines based on the payload.
-  
   if (!props.payload) return null;
   const { open: pOpen, close: pClose, high: pHigh, low: pLow } = props.payload;
   
   const yRatio = height / Math.max(Math.abs(pOpen - pClose), 0.001); // fallback to avoid NaN
-  const scaleY = (val: number) => y + (Math.max(pOpen, pClose) - val) * yRatio;
-
-  // Let's use simple coordinate translation based on the chart axes if yAxis is available.
-  // Actually, standard Recharts Bar just passes x, y, width, height representing the distance from 0 or the designated baseline.
-  // We can just construct a shape manually if we pull the YAxis scale from props.
-  // Instead of complex math, let's use the provided `y, height` which already correspond to the `[min(open,close), max(open,close)]` range IF we set dataKey to a tuple `[open, close]`.
   
-  // In Recharts, if Bar dataKey="[open, close]", then y and height represent the body.
   const halfWidth = width / 2;
-  
-  // We need the scale function. Let's cheat by using the ratio of height to body value.
   const bodyValue = Math.abs(pOpen - pClose);
   const pxPerValue = bodyValue > 0 ? height / bodyValue : 0;
   
@@ -84,7 +70,14 @@ export default function StockDetailPanel({ stock: initialStock, setStock, watchl
 
     setIsGenerating(true);
     try {
-      const prompt = `請扮演專業分析師，根據以下資料產生最新的股票分析報告。標的: ${stock.name}(${stock.id}), 最新價格: ${stock.price}, 漲跌幅: ${stock.change}。請以 JSON 格式回傳，欄位包含:
+      const prompt = `請扮演專業分析師，根據以下資料產生最新的股票分析報告。
+標的: ${stock.name}(${stock.id})
+最新價格: ${stock.price} (漲跌幅: ${stock.change})
+【財報數據】本益比 ${stock.fundamentals?.pe || '-'}x, 殖利率 ${stock.fundamentals?.yield || '-'}%, 營收YoY ${stock.fundamentals?.revYoy || '-'}, 累積EPS ${stock.fundamentals?.eps || '-'}
+【技術指標】MACD: ${stock.technicalInfo?.macd || '-'}, KD: ${stock.technicalInfo?.kd || '-'}, 均線: ${stock.technicalInfo?.ma || '-'}
+【籌碼動向】三大法人: ${stock.institutionalSummary || '-'}
+
+請在報告中明確引用上述具體數據(如 EPS, 本益比, YoY, KD值, 外資動向)來佐證你的分析。請以 JSON 格式回傳，欄位包含:
       {
         "fundamental": "基本面分析 (約50字)",
         "technical": "技術面分析 (約50字)",
@@ -98,7 +91,6 @@ export default function StockDetailPanel({ stock: initialStock, setStock, watchl
 
       let responseText = '';
       if (llmKey.startsWith('sk-')) {
-        // OpenAI
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${llmKey}` },
@@ -110,7 +102,6 @@ export default function StockDetailPanel({ stock: initialStock, setStock, watchl
         const data = await res.json();
         responseText = data.choices[0].message.content;
       } else {
-        // Gemini
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${llmKey}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -148,7 +139,6 @@ export default function StockDetailPanel({ stock: initialStock, setStock, watchl
     }
   };
   
-  // Preprocess K-line data for Candlestick mapping (using [open, close] for dataKey)
   const chartData = stock.klineData.map(d => ({
     ...d,
     candleBody: [d.open, d.close]
@@ -182,6 +172,71 @@ export default function StockDetailPanel({ stock: initialStock, setStock, watchl
         </div>
       </header>
 
+      {/* 股票深度分析總結 (Moved to Top) */}
+      <div className="bg-[#111624] rounded-2xl border border-slate-800 shadow-lg flex flex-col overflow-hidden relative w-full">
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
+        <div className="p-6 lg:p-8">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <FileSearch className="w-6 h-6 text-blue-400"/> 股票深度分析總結
+            </h3>
+            <button 
+              onClick={handleGenerateReport} 
+              disabled={isGenerating}
+              className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {isGenerating ? <BrainCircuit className="w-4 h-4 animate-pulse" /> : <BrainCircuit className="w-4 h-4" />}
+              {isGenerating ? '產生中...' : '重新生成 AI 報告'}
+            </button>
+          </div>
+          <p className="text-sm text-slate-500 font-mono mb-8">Generated by AlphaFlow AI • {stock.actionAdvice.aiConfidence}% Confidence</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="bg-slate-900/50 p-5 rounded-xl border border-slate-800/80 hover:bg-slate-800/50 transition-colors h-full">
+              <h4 className="text-sm font-bold text-purple-400 mb-3 flex items-center gap-2">
+                <Landmark className="w-4 h-4"/> 基本面分析
+              </h4>
+              <p className="text-[14px] leading-relaxed text-slate-300 font-light">{stock.analysisSummary?.fundamental || stock.aiReport?.health}</p>
+            </div>
+            <div className="bg-slate-900/50 p-5 rounded-xl border border-slate-800/80 hover:bg-slate-800/50 transition-colors h-full">
+              <h4 className="text-sm font-bold text-blue-400 mb-3 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4"/> 技術分析
+              </h4>
+              <p className="text-[14px] leading-relaxed text-slate-300 font-light">{stock.analysisSummary?.technical || stock.aiReport?.trend}</p>
+            </div>
+            <div className="bg-slate-900/50 p-5 rounded-xl border border-slate-800/80 hover:bg-slate-800/50 transition-colors h-full">
+              <h4 className="text-sm font-bold text-emerald-400 mb-3 flex items-center gap-2">
+                <Newspaper className="w-4 h-4"/> 籌碼與消息
+              </h4>
+              <p className="text-[14px] leading-relaxed text-slate-300 font-light">{stock.analysisSummary?.chips || stock.aiReport?.prediction}</p>
+            </div>
+            <div className="bg-slate-900/50 p-5 rounded-xl border border-slate-800/80 hover:bg-slate-800/50 transition-colors h-full">
+              <h4 className="text-sm font-bold text-rose-400 mb-3 flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4"/> 潛在風險分析
+              </h4>
+              <p className="text-[14px] leading-relaxed text-slate-300 font-light">{stock.analysisSummary?.risk || '【系統性風險】需留意大盤回檔影響，以及產業庫存調整之不確定性。'}</p>
+            </div>
+          </div>
+
+          {/* 獨立強調的操作建議 */}
+          <div className={`p-6 rounded-xl border ${stock.actionAdvice.action === 'BUY' ? 'bg-emerald-500/10 border-emerald-500/30' : stock.actionAdvice.action === 'SELL' ? 'bg-rose-500/10 border-rose-500/30' : 'bg-blue-500/10 border-blue-500/30'}`}>
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+              <div className={`px-6 py-4 shrink-0 text-center rounded-xl font-black text-2xl ${stock.actionAdvice.action === 'BUY' ? 'bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)]' : stock.actionAdvice.action === 'SELL' ? 'bg-rose-500 text-white shadow-[0_0_20px_rgba(244,63,94,0.3)]' : 'bg-blue-500 text-white shadow-[0_0_20px_rgba(59,130,246,0.3)]'}`}>
+                {stock.actionAdvice.action}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-base font-bold text-white flex items-center gap-2">
+                    <BrainCircuit className="w-5 h-5" /> AI 綜合操作建議
+                  </h4>
+                </div>
+                <p className="text-[15px] text-slate-200 leading-relaxed font-normal">{stock.analysisSummary?.advice || stock.actionAdvice.comment}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-[#111624] p-6 rounded-2xl border border-slate-800 shadow-lg">
           <h3 className="text-lg font-bold text-white mb-5 flex items-center gap-2">
@@ -213,6 +268,12 @@ export default function StockDetailPanel({ stock: initialStock, setStock, watchl
           </div>
           <h3 className="text-lg font-bold text-white mb-5 flex items-center gap-2 relative z-10">
             <Target className="w-5 h-5 text-orange-400"/> AI 估價模型與目標價
+            <div className="relative group cursor-pointer ml-1">
+              <Info className="w-4 h-4 text-slate-500 hover:text-slate-300" />
+              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-72 bg-slate-800 text-slate-300 text-[12px] leading-relaxed p-4 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none border border-slate-700 font-normal">
+                本系統之 AI 估價模型綜合考量個股近五年之歷史本益比(PE)區間、預估 EPS 以及市場資金動能。透過常態分佈統計，取其 PE 均值上下 1 至 2 個標準差，並依據最新財報與營收 YoY 表現給予動態折溢價，推算出五個位階。目標價為模型預測未來半年最可能觸及之合理價值上限。
+              </div>
+            </div>
           </h3>
           <div className="flex items-end justify-between mb-6 relative z-10">
             <div>
@@ -226,7 +287,6 @@ export default function StockDetailPanel({ stock: initialStock, setStock, watchl
           </div>
 
           <div className="relative pt-4 mt-2 border-t border-slate-800/80 z-10">
-            {/* 價位區間線 */}
             <div className="h-1.5 w-full bg-gradient-to-r from-emerald-500 via-yellow-500 to-rose-500 rounded-full mb-3" />
             <div className="flex justify-between text-[11px] font-mono text-slate-400 font-medium tracking-wider">
               <div className="text-left">
@@ -255,7 +315,6 @@ export default function StockDetailPanel({ stock: initialStock, setStock, watchl
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* 左側：近 20 日走勢與成交量 */}
         <div className="xl:col-span-2">
           <div className="bg-[#111624] p-5 sm:p-6 rounded-2xl border border-slate-800 shadow-lg h-full">
             <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
@@ -279,7 +338,6 @@ export default function StockDetailPanel({ stock: initialStock, setStock, watchl
                       return [value, name];
                     }}
                   />
-                  {/* Candlestick Body & Wick */}
                   <Bar dataKey="candleBody" shape={<CandlestickShape />} name="K棒" />
                 </ComposedChart>
               </ResponsiveContainer>
@@ -294,7 +352,6 @@ export default function StockDetailPanel({ stock: initialStock, setStock, watchl
           </div>
         </div>
 
-        {/* 右側：三大法人近 5 日買賣超 */}
         <div className="xl:col-span-1">
           <div className="bg-[#111624] p-5 sm:p-6 rounded-2xl border border-slate-800 shadow-lg h-full">
             <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
@@ -319,7 +376,6 @@ export default function StockDetailPanel({ stock: initialStock, setStock, watchl
         </div>
       </div>
 
-      {/* 本益比河流圖 (Full width) */}
       <div className="bg-[#111624] p-5 sm:p-6 rounded-2xl border border-slate-800 shadow-lg">
         <h3 className="text-lg font-bold text-white flex items-center justify-between mb-6">
            <div className="flex items-center gap-2">
@@ -351,62 +407,6 @@ export default function StockDetailPanel({ stock: initialStock, setStock, watchl
         </div>
       </div>
 
-      {/* 股票深度分析總結 (Full width) */}
-      <div className="bg-[#111624] rounded-2xl border border-slate-800 shadow-lg flex flex-col overflow-hidden relative w-full">
-        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
-        <div className="p-6 lg:p-8">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                <FileSearch className="w-6 h-6 text-blue-400"/> 股票深度分析總結
-            </h3>
-            <button 
-              onClick={handleGenerateReport} 
-              disabled={isGenerating}
-              className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {isGenerating ? <BrainCircuit className="w-4 h-4 animate-pulse" /> : <BrainCircuit className="w-4 h-4" />}
-              {isGenerating ? '產生中...' : '重新生成 AI 報告'}
-            </button>
-          </div>
-          <p className="text-sm text-slate-500 font-mono mb-8">Generated by AlphaFlow AI • {stock.actionAdvice.aiConfidence}% Confidence</p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="bg-slate-900/50 p-5 rounded-xl border border-slate-800/80 hover:bg-slate-800/50 transition-colors h-full">
-              <h4 className="text-sm font-bold text-purple-400 mb-3 flex items-center gap-2">
-                <Landmark className="w-4 h-4"/> 基本面分析
-              </h4>
-              <p className="text-[14px] leading-relaxed text-slate-300 font-light">{stock.analysisSummary?.fundamental || stock.aiReport.health}</p>
-            </div>
-            <div className="bg-slate-900/50 p-5 rounded-xl border border-slate-800/80 hover:bg-slate-800/50 transition-colors h-full">
-              <h4 className="text-sm font-bold text-blue-400 mb-3 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4"/> 技術分析
-              </h4>
-              <p className="text-[14px] leading-relaxed text-slate-300 font-light">{stock.analysisSummary?.technical || stock.aiReport.trend}</p>
-            </div>
-            <div className="bg-slate-900/50 p-5 rounded-xl border border-slate-800/80 hover:bg-slate-800/50 transition-colors h-full">
-              <h4 className="text-sm font-bold text-emerald-400 mb-3 flex items-center gap-2">
-                <Newspaper className="w-4 h-4"/> 籌碼與消息
-              </h4>
-              <p className="text-[14px] leading-relaxed text-slate-300 font-light">{stock.analysisSummary?.chips || stock.aiReport.prediction}</p>
-            </div>
-            <div className="bg-slate-900/50 p-5 rounded-xl border border-slate-800/80 hover:bg-slate-800/50 transition-colors h-full">
-              <h4 className="text-sm font-bold text-rose-400 mb-3 flex items-center gap-2">
-                <ShieldAlert className="w-4 h-4"/> 潛在風險分析
-              </h4>
-              <p className="text-[14px] leading-relaxed text-slate-300 font-light">{stock.analysisSummary?.risk || '【系統性風險】需留意大盤回檔影響，以及產業庫存調整之不確定性。'}</p>
-            </div>
-          </div>
-
-          {/* 獨立強調的操作建議 */}
-          <div className={`p-6 rounded-xl border ${stock.actionAdvice.action === 'BUY' ? 'bg-emerald-500/10 border-emerald-500/30' : stock.actionAdvice.action === 'SELL' ? 'bg-rose-500/10 border-rose-500/30' : 'bg-blue-500/10 border-blue-500/30'}`}>
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-              <div className={`px-6 py-4 shrink-0 text-center rounded-xl font-black text-2xl ${stock.actionAdvice.action === 'BUY' ? 'bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)]' : stock.actionAdvice.action === 'SELL' ? 'bg-rose-500 text-white shadow-[0_0_20px_rgba(244,63,94,0.3)]' : 'bg-blue-500 text-white shadow-[0_0_20px_rgba(59,130,246,0.3)]'}`}>
-                {stock.actionAdvice.action}
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-base font-bold text-white flex items-center gap-2">
-                    <BrainCircuit className="w-5 h-5" /> AI 綜合操作建議
                   </h4>
                 </div>
                 <p className="text-[15px] text-slate-200 leading-relaxed font-normal">{stock.analysisSummary?.advice || stock.actionAdvice.comment}</p>

@@ -49,6 +49,13 @@ export interface StockDetail {
     risk: string;
   };
   expenseRatio?: number;
+  revenueData: { month: string; revenue: number; yoy: number; }[];
+  technicalInfo: {
+    macd: string;
+    kd: string;
+    ma: string;
+  };
+  institutionalSummary: string;
 }
 
 export interface MarketTrend {
@@ -106,7 +113,14 @@ const generateMockData = (basePrice: number) => {
   if(kline[19].open > p) kline[19].low = p * 0.99;
   if(kline[19].high < p) kline[19].high = p * 1.01;
 
-  return { peRiverData: peRiver, institutionalData: inst, klineData: kline };
+  const revBase = Math.floor(Math.random() * 5000 + 1000);
+  const revenueData = Array.from({length: 12}).map((_, i) => {
+    const rev = revBase * (1 + (Math.random() - 0.4) * 0.2);
+    const yoy = (Math.random() - 0.3) * 30; // -9% to 21%
+    return { month: `2023-${String(i+1).padStart(2, '0')}`, revenue: Math.round(rev), yoy: Number(yoy.toFixed(1)) };
+  });
+
+  return { peRiverData: peRiver, institutionalData: inst, klineData: kline, revenueData };
 }
 
 const generateAdvancedMock = (p: number, pe: number, y: number, isBearish = false) => ({
@@ -146,7 +160,13 @@ const generateAdvancedMock = (p: number, pe: number, y: number, isBearish = fals
     risk: isBearish
       ? '【高風險】最大的風險在於庫存去化速度不如預期，以及同業價格競爭導致利潤率進一步受到壓縮。此外，大盤若出現系統性風險，該股跌幅可能超越大盤。'
       : '【潛在風險】即便基本面看好，仍需留意短期股價漲幅過大可能引發的獲利了結賣壓。長期風險包含大環境匯率波動，以及關鍵原物料供應鏈可能出現的中斷隱憂。'
-  }
+  },
+  technicalInfo: {
+    macd: isBearish ? "MACD 死亡交叉，柱狀體翻綠" : "MACD 黃金交叉，紅柱持續擴大",
+    kd: isBearish ? "K: 25, D: 30，處於低檔弱勢區" : "K: 80, D: 75，多頭強勢進入超買區",
+    ma: isBearish ? "股價跌破季線(60MA)與月線(20MA)" : "股價站穩季線(60MA)與月線(20MA)，呈多頭排列"
+  },
+  institutionalSummary: isBearish ? "近五日三大法人累計賣超，外資持續調節持股" : "近五日三大法人累計買超，外資與投信同步作多"
 });
 
 // Update TSMC to 2185 and provide realistic logic.
