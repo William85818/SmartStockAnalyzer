@@ -162,6 +162,7 @@ export default function TopUpModal({ isOpen, onClose }: { isOpen: boolean, onClo
                 稍後再說
               </button>
             </div>
+            </div>
           </div>
         </motion.div>
       </div>
