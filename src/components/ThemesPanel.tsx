@@ -15,8 +15,13 @@ export default function ThemesPanel({ market, onSelectStock, watchlist, toggleWa
   const currentThemes = market === 'US' ? topThemesUs : topThemes;
   const activeThemeObj = currentThemes.find(t => t.id === activeTheme);
   const themeName = activeThemeObj?.name.split(' (')[0] || '';
+  const matchSectors = (activeThemeObj as any)?.matchSectors || [];
   const themeStocks = activeTheme 
-    ? pool.filter(s => s.themes.includes(themeName) || s.themes.some(t => activeThemeObj?.name.includes(t)))
+    ? pool.filter(s => 
+        s.themes.includes(themeName) || 
+        s.themes.some(t => activeThemeObj?.name.includes(t)) ||
+        matchSectors.some((ms: string) => s.sector.includes(ms) || ms.includes(s.sector))
+      ).slice(0, 30)
     : [];
 
   return (

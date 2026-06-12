@@ -26,7 +26,7 @@ export default function FilterPanel({ onSelectStock, watchlist, toggleWatchlist,
       const matchPe = stock.isLightweight || stock.peRatio <= maxPe;
       const matchYield = stock.isLightweight || stock.yieldRate >= minYield;
       return matchSector && matchSearch && matchPe && matchYield;
-    }).slice(0, 50);
+    }).slice(0, 10);
   }, [selectedSector, searchQuery, maxPe, minYield, pool]);
 
   return (
@@ -36,7 +36,7 @@ export default function FilterPanel({ onSelectStock, watchlist, toggleWatchlist,
           <Filter className="w-8 h-8 text-purple-500" />
           進階篩選
         </h2>
-        <p className="text-slate-400">自訂篩選條件，精準找出潛力標的。（最多顯示 50 檔）</p>
+        <p className="text-slate-400">自訂篩選條件，精準找出潛力標的。（最多顯示 10 檔）</p>
       </div>
 
       {/* Search bar */}

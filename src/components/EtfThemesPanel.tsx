@@ -25,8 +25,24 @@ export default function EtfThemesPanel({ market, onSelectStock, watchlist, toggl
   }, [market, pool]);
 
   const activeThemeObj = currentThemes.find(t => t.id === activeTheme);
+  const themeKeywords: Record<string, string[]> = {
+    '市值型': ['台灣50', '台50', '市值', '加權', '0050', '006208'],
+    '高股息': ['高股息', '股息', '股利', '配息', '0056', '00878', '00929', '00919', '00940'],
+    '科技半導體': ['半導體', '科技', '電子', '5G', 'IC'],
+    '債券型': ['債', '公債', '金融債', '公司債'],
+    'ESG永續': ['ESG', '永續', '綠能', '碳'],
+    '海外市場': ['美', '日本', '中國', '全球', '新興', '歐洲'],
+    '產業主題': ['電動車', '生技', '醫療', '能源', '元宇宙', 'AI'],
+    '大盤指數': ['S&P', 'Total', 'Index', '500'],
+    '科技創新': ['Tech', 'Innovation', 'Cloud', 'QQQ'],
+    '半導體': ['Semiconductor', 'SMH', 'SOXX'],
+  };
+  const keywords = activeThemeObj ? themeKeywords[activeThemeObj.name] || [] : [];
   const themeEtfs = activeTheme 
-    ? allEtfs.filter(s => s.themes?.includes(activeThemeObj?.name || '') || s.sector?.includes('ETF'))
+    ? allEtfs.filter(s => {
+        if (s.themes?.includes(activeThemeObj?.name || '')) return true;
+        return keywords.some(kw => s.name.includes(kw) || s.id.includes(kw) || s.sector?.includes(kw));
+      }).slice(0, 30)
     : [];
   
   // Search filtering

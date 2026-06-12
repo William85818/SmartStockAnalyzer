@@ -209,9 +209,17 @@ export const mockStocks: StockDetail[] = [
   { id: '2382', name: '廣達', price: 255, change: '+3.2%', category: 'high-risk', sector: '電腦及週邊', peRatio: 18.2, yieldRate: 3.5, dataLabel: '本淨比', dataValue: '3.5x', reason: '雲端伺服器', themes: ['AI 伺服器', '電動車'], ...generateMockData(255), aiReport: { trend: '多頭', health: '優', prediction: '成長' }, ...generateAdvancedMock(255, 18.2, 3.5, false) },
   { id: '3324', name: '雙鴻', price: 680, change: '-2.5%', category: 'high-risk', sector: '電腦及週邊', peRatio: 30.1, yieldRate: 1.2, dataLabel: '本益比', dataValue: '30.1x', reason: '散熱模組', themes: ['散熱模組'], ...generateMockData(680), aiReport: { trend: '高檔遇壓', health: '普通', prediction: '中立' }, ...generateAdvancedMock(680, 30.1, 1.2, true) },
   { id: '2881', name: '富邦金', price: 68, change: '+0.5%', category: 'value', sector: '金融保險', peRatio: 12.0, yieldRate: 5.2, dataLabel: '殖利率', dataValue: '5.2%', reason: '金控獲利王', themes: ['金融', '高股息'], ...generateMockData(68), aiReport: { trend: '緩步墊高', health: '穩健', prediction: '股利可期' }, ...generateAdvancedMock(68, 12.0, 5.2, false) },
+  { id: '2891', name: '中信金', price: 32, change: '+0.3%', category: 'value', sector: '金融保險', peRatio: 11.5, yieldRate: 5.8, dataLabel: '殖利率', dataValue: '5.8%', reason: '高股息金控', themes: ['金融', '高股息'], ...generateMockData(32), aiReport: { trend: '穩健上升', health: '穩健', prediction: '配息穩定' }, ...generateAdvancedMock(32, 11.5, 5.8, false) },
+  { id: '2882', name: '國泰金', price: 52, change: '+0.8%', category: 'value', sector: '金融保險', peRatio: 13.2, yieldRate: 4.5, dataLabel: '殖利率', dataValue: '4.5%', reason: '壽險金控龍頭', themes: ['金融', '高股息'], ...generateMockData(52), aiReport: { trend: '穩健', health: '佳', prediction: '長線看好' }, ...generateAdvancedMock(52, 13.2, 4.5, false) },
+  { id: '2884', name: '玉山金', price: 28, change: '+0.2%', category: 'value', sector: '金融保險', peRatio: 14.0, yieldRate: 4.8, dataLabel: '殖利率', dataValue: '4.8%', reason: '數位金融領先', themes: ['金融', '高股息'], ...generateMockData(28), aiReport: { trend: '盤整', health: '穩健', prediction: '穩定配息' }, ...generateAdvancedMock(28, 14.0, 4.8, false) },
+  { id: '2886', name: '兆豐金', price: 42, change: '+0.5%', category: 'value', sector: '金融保險', peRatio: 12.8, yieldRate: 5.5, dataLabel: '殖利率', dataValue: '5.5%', reason: '官股金控代表', themes: ['金融', '高股息'], ...generateMockData(42), aiReport: { trend: '穩健', health: '極佳', prediction: '殖利率王' }, ...generateAdvancedMock(42, 12.8, 5.5, false) },
+  { id: '2303', name: '聯電', price: 48, change: '-1.2%', category: 'stable', sector: '半導體', peRatio: 10.5, yieldRate: 6.0, dataLabel: '殖利率', dataValue: '6.0%', reason: '成熟製程代工', themes: ['半導體', '高股息'], ...generateMockData(48), aiReport: { trend: '盤整', health: '穩健', prediction: '穩定' }, ...generateAdvancedMock(48, 10.5, 6.0, false) },
+  { id: '2317', name: '鴻海', price: 178, change: '+1.0%', category: 'stable', sector: '其他電子', peRatio: 11.8, yieldRate: 5.0, dataLabel: '殖利率', dataValue: '5.0%', reason: '電子代工帝國', themes: ['AI 伺服器', '電動車', '高股息'], ...generateMockData(178), aiReport: { trend: '多頭', health: '佳', prediction: 'AI帶動成長' }, ...generateAdvancedMock(178, 11.8, 5.0, false) },
+  { id: '2412', name: '中華電', price: 128, change: '+0.1%', category: 'value', sector: '通信網路', peRatio: 24.0, yieldRate: 4.2, dataLabel: '殖利率', dataValue: '4.2%', reason: '電信龍頭防禦股', themes: ['電信', '高股息'], ...generateMockData(128), aiReport: { trend: '穩定', health: '極佳', prediction: '穩健配息' }, ...generateAdvancedMock(128, 24.0, 4.2, false) },
   { id: '1216', name: '統一', price: 75, change: '-0.2%', category: 'value', sector: '食品', peRatio: 18.5, yieldRate: 4.0, dataLabel: '本益比', dataValue: '18.5x', reason: '防禦型食品', themes: ['食品', '高股息'], ...generateMockData(75), aiReport: { trend: '整理', health: '穩健', prediction: '持平' }, ...generateAdvancedMock(75, 18.5, 4.0, false) },
   { id: '1503', name: '士電', price: 210, change: '+2.0%', category: 'value', sector: '電機機械', peRatio: 16.5, yieldRate: 3.5, dataLabel: '本益比', dataValue: '16.5x', reason: '重電綠能', themes: ['重電綠能'], ...generateMockData(210), aiReport: { trend: '打底完成', health: '優', prediction: '訂單滿載' }, ...generateAdvancedMock(210, 16.5, 3.5, false) },
   { id: '2345', name: '智邦', price: 550, change: '+1.5%', category: 'stable', sector: '通信網路', peRatio: 25.1, yieldRate: 2.8, dataLabel: '本益比', dataValue: '25.1x', reason: '交換器龍頭', themes: ['矽光子', '網通'], ...generateMockData(550), aiReport: { trend: '多頭延續', health: '佳', prediction: '需求強勁' }, ...generateAdvancedMock(550, 25.1, 2.8, false) },
+  { id: '3034', name: '聯詠', price: 520, change: '+2.8%', category: 'high-risk', sector: '半導體', peRatio: 16.0, yieldRate: 3.2, dataLabel: '本益比', dataValue: '16.0x', reason: '驅動IC龍頭', themes: ['半導體', '消費電子'], ...generateMockData(520), aiReport: { trend: '反彈', health: '佳', prediction: '需求回溫' }, ...generateAdvancedMock(520, 16.0, 3.2, false) },
 ];
 
 export const mockEtfs: StockDetail[] = [
@@ -367,16 +375,20 @@ export const mockEtfsUs: StockDetail[] = [
 export const strategies = [
   { id: 'stable', label: '穩健成長', icon: ShieldCheck, desc: '大型權值股，護城河深厚' },
   { id: 'high-risk', label: '高風險高報酬', icon: Zap, desc: '動能強勢，短期爆發力高' },
-  { id: 'value', label: '價值投資', icon: Building2, desc: '低基期、高殖利率，穩定配息' }
+  { id: 'value', label: '價值投資', icon: Building2, desc: '低基期、高殖利率，穩定配息' },
+  { id: 'etf', label: 'ETF 指數投資', icon: ShieldCheck, desc: '分散風險，追蹤大盤或特定主題' }
 ];
 
 export const topThemes = [
-  { id: 't1', name: 'AI 伺服器 (強勢)', desc: '晶片組裝及相關散熱與電源', isBullish: true },
-  { id: 't2', name: '半導體 (回測)', desc: '成熟製程訂單縮減，面臨毛利壓力', isBullish: false },
-  { id: 't3', name: '重電綠能 (強勢)', desc: '台電強韌電網計畫持續挹注', isBullish: true },
-  { id: 't4', name: '消費電子 (疲弱)', desc: '終端消費力道未明，手機換機潮延宕', isBullish: false },
-  { id: 't5', name: '航運 (整理)', desc: '運價反轉向下風險增加', isBullish: false },
-  { id: 't6', name: '高股息 (資金避風港)', desc: '高殖利率抗跌股，法人加碼', isBullish: true },
+  { id: 't1', name: 'AI 伺服器 (強勢)', desc: '晶片組裝及相關散熱與電源', isBullish: true, matchSectors: ['電腦及週邊設備業', '電腦及週邊'] },
+  { id: 't2', name: '半導體 (回測)', desc: '成熟製程訂單縮減，面臨毛利壓力', isBullish: false, matchSectors: ['半導體業', '半導體'] },
+  { id: 't3', name: '重電綠能 (強勢)', desc: '台電強韌電網計畫持續挹注', isBullish: true, matchSectors: ['電機機械', '電器電纜'] },
+  { id: 't4', name: '消費電子 (疲弱)', desc: '終端消費力道未明，手機換機潮延宕', isBullish: false, matchSectors: ['光電業', '其他電子'] },
+  { id: 't5', name: '金融 (穩健)', desc: '金控銀行壽險穩定配息', isBullish: true, matchSectors: ['金融保險', '金融業'] },
+  { id: 't6', name: '高股息 (資金避風港)', desc: '高殖利率抗跌股，法人加碼', isBullish: true, matchSectors: [] },
+  { id: 't7', name: '航運 (整理)', desc: '運價反轉向下風險增加', isBullish: false, matchSectors: ['航運業'] },
+  { id: 't8', name: '電子零組件 (成長)', desc: '被動元件與連接器需求回溫', isBullish: true, matchSectors: ['電子零組件業', '電子零組件'] },
+  { id: 't9', name: '生技醫療 (觀望)', desc: '新藥開發題材', isBullish: false, matchSectors: ['生技醫療業', '生技醫療', '化學生技醫療'] },
 ];
 
 export const topThemesUs = [
@@ -387,9 +399,13 @@ export const topThemesUs = [
 ];
 
 export const etfThemes = [
-  { id: 'etf1', name: '市值型', desc: '追蹤大盤，適合長線存放' },
-  { id: 'etf2', name: '高股息', desc: '追求高殖利率，配息穩定' },
+  { id: 'etf1', name: '市值型', desc: '追蹤台灣大盤或特定市值指數' },
+  { id: 'etf2', name: '高股息', desc: '追求高殖利率，季配/月配穩定' },
   { id: 'etf3', name: '科技半導體', desc: '聚焦高彈性的電子科技產業' },
+  { id: 'etf4', name: '債券型', desc: '追蹤公司債或政府公債指數' },
+  { id: 'etf5', name: 'ESG永續', desc: '聚焦ESG永續經營的企業' },
+  { id: 'etf6', name: '海外市場', desc: '追蹤美股、日股、陸股等海外指數' },
+  { id: 'etf7', name: '產業主題', desc: '電動車、5G、生技等特定產業' },
 ];
 
 export const etfThemesUs = [
@@ -532,9 +548,12 @@ export const fetchAllStockSymbols = async (market: 'TW' | 'US'): Promise<StockDe
   }
   
   try {
+    // localStorage cache with 24-hour expiry
     const cachedStr = localStorage.getItem('finmind_all_stocks');
+    const cacheTime = localStorage.getItem('finmind_all_stocks_time');
+    const isCacheValid = cachedStr && cacheTime && (Date.now() - Number(cacheTime)) < 24 * 60 * 60 * 1000;
     let data;
-    if (cachedStr) {
+    if (isCacheValid) {
       data = JSON.parse(cachedStr);
     } else {
       const res = await fetch('https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInfo');
@@ -542,19 +561,37 @@ export const fetchAllStockSymbols = async (market: 'TW' | 'US'): Promise<StockDe
       data = json.data;
       if (data && data.length > 0) {
         localStorage.setItem('finmind_all_stocks', JSON.stringify(data));
+        localStorage.setItem('finmind_all_stocks_time', String(Date.now()));
       }
     }
     
     if (data && Array.isArray(data)) {
-       const filtered = data.filter((d: any) => d.type === 'twse' || d.type === 'tpex');
+       // Include twse, tpex and also deduplicate by stock_id
+       const seen = new Set<string>();
+       const filtered = data.filter((d: any) => {
+         if (seen.has(d.stock_id)) return false;
+         seen.add(d.stock_id);
+         return d.type === 'twse' || d.type === 'tpex';
+       });
        // 將 mockStocks 與全市場清單合併，讓 mockStocks 具有優先權（有完整資料）
        const mockIds = new Set(mockStocks.map(m => m.id));
        const lightweightStocks = filtered
          .filter((d: any) => !mockIds.has(d.stock_id))
          .map((d: any, i: number) => {
-          const isStable = i % 2 === 0;
           const isEtf = d.industry_category === 'ETF' || d.industry_category.includes('ETF') || d.industry_category.includes('指數股票型基金');
-          const category = isEtf ? 'etf' : (isStable ? 'stable' : 'high-risk');
+          const isFinance = d.industry_category.includes('金融') || d.industry_category.includes('保險') || d.industry_category.includes('證券');
+          const isSemiconductor = d.industry_category.includes('半導體');
+          const category = isEtf ? 'etf' : (isFinance ? 'value' : (isSemiconductor ? 'stable' : (i % 2 === 0 ? 'stable' : 'high-risk')));
+          // Map sector to theme names for better theme matching
+          const sectorThemes: string[] = [d.industry_category];
+          if (isFinance) sectorThemes.push('金融', '高股息');
+          if (isSemiconductor) sectorThemes.push('半導體');
+          if (d.industry_category.includes('電腦') || d.industry_category.includes('伺服器')) sectorThemes.push('AI 伺服器');
+          if (d.industry_category.includes('電機') || d.industry_category.includes('電纜')) sectorThemes.push('重電綠能');
+          if (d.industry_category.includes('光電')) sectorThemes.push('消費電子');
+          if (d.industry_category.includes('航運')) sectorThemes.push('航運');
+          if (d.industry_category.includes('生技') || d.industry_category.includes('醫療')) sectorThemes.push('生技醫療');
+          if (d.industry_category.includes('食品')) sectorThemes.push('食品');
           return {
              id: d.stock_id,
              name: d.stock_name,
@@ -567,7 +604,7 @@ export const fetchAllStockSymbols = async (market: 'TW' | 'US'): Promise<StockDe
              dataLabel: '產業',
              dataValue: d.industry_category,
              reason: '點擊以載入最新資料',
-             themes: [d.industry_category],
+             themes: sectorThemes,
              peRiverData: [],
              institutionalData: [],
              klineData: [],
@@ -592,7 +629,7 @@ export const fetchAllStockSymbols = async (market: 'TW' | 'US'): Promise<StockDe
 
 // 取得單一股票詳細資料
 export const fetchSingleStockDetail = async (stock: StockDetail, market: 'TW' | 'US'): Promise<StockDetail> => {
-  if (market === 'US' || !stock.isLightweight) {
+  if (market === 'US') {
      return stock;
   }
   
@@ -613,9 +650,11 @@ export const fetchSingleStockDetail = async (stock: StockDetail, market: 'TW' | 
 
       if (docSnap.exists()) {
         const cache = docSnap.data();
-        const cacheDate = new Date(cache.updatedAt).toISOString().split('T')[0];
-        if (cacheDate === todayStr) {
+        const cacheAgeMs = Date.now() - new Date(cache.updatedAt).getTime();
+        const oneDayMs = 24 * 60 * 60 * 1000;
+        if (cacheAgeMs < oneDayMs) {
           data = cache.payload;
+          console.log(`[Firebase Cache Hit] ${stock.id} (age: ${Math.round(cacheAgeMs/60000)}min)`);
         }
       }
 
@@ -644,6 +683,7 @@ export const fetchSingleStockDetail = async (stock: StockDetail, market: 'TW' | 
            price: p,
            change: `${isUp ? '+' : ''}${changePct}%`,
            dataValue: `NT$${p}`,
+           priceUpdatedAt: new Date().toISOString(),
            ...generateMockData(p),
            aiReport: {
              trend: isUp ? '多頭' : '空頭',
