@@ -41,6 +41,7 @@ export default function App() {
   const [loadingRealData, setLoadingRealData] = useState(true);
   const [isFetchingDetail, setIsFetchingDetail] = useState(false);
   const [market, setMarket] = useState<'TW' | 'US'>('TW');
+  const isDemoMode = checkIsDemoMode(market);
 
   // 載入 Watchlist
   useEffect(() => {
