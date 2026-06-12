@@ -412,52 +412,47 @@ export const fetchMarketData = async (market: 'TW' | 'US'): Promise<StockDetail[
   } else {
     // TW Market using FinMind
     try {
-      const symbols = ['2330', '2454', '2317', '2382', '3231', '2308', '2881', '1216', '1503', '2345'];
       const todayStr = new Date().toISOString().split('T')[0];
       let d = new Date();
       d.setDate(d.getDate() - 10);
       const startStr = d.toISOString().split('T')[0];
       
-      const results: StockDetail[] = [];
-      const fetchPromises = symbols.slice(0, 5).map(async (sym, index) => {
-        const url = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id=${sym}&start_date=${startStr}&end_date=${todayStr}${keys.finmindKey ? `&token=${keys.finmindKey}` : ''}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        if (data.data && data.data.length >= 2) {
-          const latest = data.data[data.data.length - 1];
-          const prev = data.data[data.data.length - 2];
-          const p = latest.close;
-          const prevP = prev.close;
-          const changePct = ((p - prevP) / prevP * 100).toFixed(2);
-          const isUp = p >= prevP;
-          
-          results.push({
-            id: sym,
-            name: sym === '2330' ? '台積電' : sym === '2317' ? '鴻海' : sym === '2454' ? '聯發科' : sym,
-            price: p,
-            change: `${isUp ? '+' : ''}${changePct}%`,
-            category: index % 2 === 0 ? 'stable' : 'value',
-            sector: '電子/傳產',
-            peRatio: 15,
-            yieldRate: 4,
-            dataLabel: '收盤價',
-            dataValue: `NT$${p}`,
-            reason: '台股權值股',
-            themes: ['台股'],
-            ...generateMockData(p),
-            aiReport: {
-              trend: isUp ? '多頭' : '空頭',
-              health: isUp ? '佳' : '差',
-              prediction: isUp ? '看好' : '保守'
-            },
-            ...generateAdvancedMock(p, 15, 4, !isUp)
-          });
+      const fetchPromises = mockStocks.map(async (mockStock) => {
+        try {
+          const sym = mockStock.id;
+          const url = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id=${sym}&start_date=${startStr}&end_date=${todayStr}${keys.finmindKey ? `&token=${keys.finmindKey}` : ''}`;
+          const res = await fetch(url);
+          const data = await res.json();
+          if (data.data && data.data.length >= 2) {
+            const latest = data.data[data.data.length - 1];
+            const prev = data.data[data.data.length - 2];
+            const p = latest.close;
+            const prevP = prev.close;
+            const changePct = ((p - prevP) / prevP * 100).toFixed(2);
+            const isUp = p >= prevP;
+            
+            return {
+              ...mockStock,
+              price: p,
+              change: `${isUp ? '+' : ''}${changePct}%`,
+              dataValue: `NT$${p}`,
+              ...generateMockData(p),
+              aiReport: {
+                ...mockStock.aiReport,
+                trend: isUp ? '多頭' : '空頭',
+                health: isUp ? '佳' : '差',
+              },
+              ...generateAdvancedMock(p, mockStock.fundamentals.pe, mockStock.fundamentals.yield, !isUp)
+            };
+          }
+        } catch(e) {
+          console.error(`Failed to fetch ${mockStock.id}`, e);
         }
+        return mockStock; // Fallback to mock data if fetch fails
       });
       
-      await Promise.all(fetchPromises);
-      if (results.length > 0) return results;
-      return mockStocks;
+      const results = await Promise.all(fetchPromises);
+      return results;
     } catch (e) {
       console.error(e);
       return mockStocks;
