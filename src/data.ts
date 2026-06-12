@@ -936,18 +936,11 @@ export const fetchSingleStockDetail = async (stock: StockDetail, market: 'TW' | 
 export const fetchRealTwseStocks = fetchAllStockSymbols;
 
 export const fetchMarketTrend = async (market: 'TW' | 'US'): Promise<MarketTrend[]> => {
-  const savedKeys = localStorage.getItem('alphaFlow_apiKeys');
-  let finmindKey = '';
-  let alpacaKey = '';
-  let alpacaSecret = '';
-  if (savedKeys) {
-    try {
-      const parsed = JSON.parse(savedKeys);
-      finmindKey = parsed.finmindKey || '';
-      alpacaKey = parsed.alpacaKey || '';
-      alpacaSecret = parsed.alpacaSecret || '';
-    } catch (e) {}
-  }
+  const keys = await fetchSystemKeys();
+  const finmindKey = keys.finmindKey || '';
+  const alpacaKey = keys.alpacaKey || '';
+  const alpacaSecret = keys.alpacaSecret || '';
+  const role = getUserRole();
 
   // Fallback default
   const fallbackTrend: MarketTrend[] = [

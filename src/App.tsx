@@ -22,20 +22,25 @@ import EtfThemesPanel from './components/EtfThemesPanel';
 import HeatmapPanel from './components/HeatmapPanel';
 import MarketOverviewPanel from './components/MarketOverviewPanel';
 import SettingsModal from './components/SettingsModal';
-import { Settings, Globe, Loader2, LayoutGrid, ActivitySquare } from 'lucide-react';
+import LoginModal from './components/LoginModal';
+import TopUpModal from './components/TopUpModal';
+import { Settings, Globe, Loader2, LayoutGrid, ActivitySquare, UserCircle, Crown, AlertTriangle } from 'lucide-react';
+import { useAuth } from './contexts/AuthContext';
 
 type Route = 'screener' | 'watchlist' | 'themes' | 'filter' | 'etfthemes' | 'heatmap' | 'overview';
 
 export default function App() {
+  const { user, isLoading } = useAuth();
   const [activeRoute, setActiveRoute] = useState<Route>('screener');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isTopUpOpen, setIsTopUpOpen] = useState(false);
   const [selectedStock, setSelectedStock] = useState<StockDetail | null>(null);
   const [watchlist, setWatchlist] = useState<string[]>([]);
   const [realStocks, setRealStocks] = useState<StockDetail[]>([]);
   const [loadingRealData, setLoadingRealData] = useState(true);
   const [isFetchingDetail, setIsFetchingDetail] = useState(false);
   const [market, setMarket] = useState<'TW' | 'US'>('TW');
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const isDemoMode = checkIsDemoMode(market);
 
   // 載入 Watchlist
   useEffect(() => {
@@ -95,6 +100,13 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#090b14] text-slate-200 font-sans selection:bg-blue-500/30 flex flex-col md:flex-row">
       
+      {/* DEMO MODE Banner */}
+      {user?.role === 'guest' && !isLoading && (
+        <div className="bg-orange-500 text-white py-1 px-4 text-center text-xs font-bold tracking-widest flex items-center justify-center gap-2 relative z-50 shadow-md">
+          <AlertTriangle className="w-3 h-3" /> DEMO MODE (訪客唯讀模式) - 您正在瀏覽昨日的快取歷史資料，請登入或升級會員獲取即時大數據分析！
+        </div>
+      )}
+
       {/* 側邊導覽列 */}
       {!selectedStock && (
       <aside className="w-full md:w-64 bg-[#0d111d] border-b md:border-b-0 md:border-r border-slate-800/60 p-6 flex flex-col z-20 shrink-0">
@@ -228,12 +240,48 @@ export default function App() {
             </div>
           </div>
 
-          <button 
-            onClick={() => setIsSettingsOpen(true)}
-            className="flex items-center justify-center gap-2 w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm font-medium transition-colors"
-          >
-            <Settings className="w-4 h-4" /> API 設定
-          </button>
+          {/* User / Login Area at bottom of sidebar */}
+          <div className="p-4 border-t border-slate-800/50 space-y-2">
+            {user?.role === 'guest' ? (
+              <>
+                <button 
+                  onClick={() => setIsTopUpOpen(true)}
+                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white py-2.5 rounded-lg transition-all font-bold shadow-lg shadow-orange-500/20 text-sm"
+                >
+                  <Crown className="w-4 h-4" /> 升級正式會員
+                </button>
+                <button 
+                  onClick={() => setIsLoginOpen(true)}
+                  className="w-full flex items-center justify-center gap-2 text-slate-400 hover:text-white py-2 transition-colors text-sm font-medium"
+                >
+                  <UserCircle className="w-4 h-4" /> 帳號登入
+                </button>
+              </>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <button 
+                  onClick={() => setIsLoginOpen(true)}
+                  className="w-full flex items-center justify-between bg-slate-800 hover:bg-slate-700 text-white px-3 py-2.5 rounded-lg transition-all text-sm"
+                >
+                  <div className="flex items-center gap-2">
+                    <UserCircle className="w-4 h-4 text-indigo-400" />
+                    <span className="font-bold">{user?.username}</span>
+                  </div>
+                  <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full ${user?.role === 'admin' ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                    {user?.role}
+                  </span>
+                </button>
+                {user?.role === 'admin' && (
+                  <button 
+                    onClick={() => setIsSettingsOpen(true)}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                  >
+                    <Settings className="w-4 h-4" /> 系統設定 (Admin)
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
 
           <p className="text-xs text-slate-500 font-mono flex items-center gap-2 justify-center">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -243,7 +291,9 @@ export default function App() {
       </aside>
       )}
 
-      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      {isSettingsOpen && user?.role === 'admin' && <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />}
+      <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+      <TopUpModal isOpen={isTopUpOpen} onClose={() => setIsTopUpOpen(false)} />
 
       {/* 主要內容區 */}
       <main className={`flex-1 p-6 md:p-8 xl:p-10 mx-auto w-full overflow-y-auto ${selectedStock ? 'lg:max-w-7xl' : 'lg:max-w-[1400px]'}`}>

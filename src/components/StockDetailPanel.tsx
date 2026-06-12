@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, Heart, TrendingUp, BarChart3, Activity, Target, Landmark, Newspaper, FileSearch, ShieldAlert, BrainCircuit, Info } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { ArrowLeft, Heart, TrendingUp, BarChart3, Activity, Target, Landmark, Newspaper, FileSearch, ShieldAlert, BrainCircuit, Info, RefreshCcw, Lock } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, Legend, ReferenceLine, ComposedChart, Line } from 'recharts';
 import { StockDetail } from '../data';
 
@@ -49,6 +50,7 @@ export default function StockDetailPanel({ stock: initialStock, setStock, watchl
   watchlist: string[];
   toggleWatchlist: (id: string, e?: React.MouseEvent) => void;
 }) {
+  const { user } = useAuth();
   const [stock, setLocalStock] = React.useState<StockDetail>(initialStock);
   const [isGenerating, setIsGenerating] = React.useState(false);
 
@@ -183,11 +185,12 @@ export default function StockDetailPanel({ stock: initialStock, setStock, watchl
             </h3>
             <button 
               onClick={handleGenerateReport} 
-              disabled={isGenerating}
+              disabled={isGenerating || (user?.role === 'guest')}
+              title={user?.role === 'guest' ? '請升級會員以使用此功能' : ''}
               className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              {isGenerating ? <BrainCircuit className="w-4 h-4 animate-pulse" /> : <BrainCircuit className="w-4 h-4" />}
-              {isGenerating ? '產生中...' : '重新生成 AI 報告'}
+              {isGenerating ? <BrainCircuit className="w-4 h-4 animate-pulse" /> : user?.role === 'guest' ? <Lock className="w-4 h-4" /> : <BrainCircuit className="w-4 h-4" />}
+              {isGenerating ? '產生中...' : user?.role === 'guest' ? '會員限定功能' : '重新生成 AI 報告'}
             </button>
           </div>
           <p className="text-sm text-slate-500 font-mono mb-8 flex items-center gap-2">
