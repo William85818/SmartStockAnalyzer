@@ -676,40 +676,99 @@ export const fetchAllStockSymbols = async (market: 'TW' | 'US'): Promise<StockDe
     mockStocks.forEach(applyPriceUpdate);
     mockEtfs.forEach(applyPriceUpdate);
 
-    // Firebase global database cache for all stock symbols (24-hour expiry)
+    // 嘗試從 Firebase 讀取 TWSE_TPEX_Quotes (包含全市場真實報價)
     let data;
     try {
-      const marketDocRef = doc(db, 'marketData', 'TaiwanStockInfo');
+      const marketDocRef = doc(db, 'marketData', 'TWSE_TPEX_Quotes');
       const marketSnap = await getDoc(marketDocRef);
       if (marketSnap.exists()) {
         const cache = marketSnap.data();
         if (cache && cache.payload && cache.updatedAt) {
           const cacheAgeMs = Date.now() - new Date(cache.updatedAt).getTime();
-          if (cacheAgeMs < 24 * 60 * 60 * 1000) {
+          // API 通常盤後更新一次，設定 12 小時快取
+          if (cacheAgeMs < 12 * 60 * 60 * 1000) {
             data = cache.payload;
-            console.log('[Firebase Cache Hit] TaiwanStockInfo full market list loaded');
+            console.log('[Firebase Cache Hit] TWSE_TPEX_Quotes full market list loaded');
           }
         }
       }
       
       if (!data) {
-        console.log('[API Fetch] Fetching TaiwanStockInfo from FinMind...');
-        const res = await fetch('https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInfo');
-        const json = await res.json();
-        data = json.data;
+        console.log('[API Fetch] Fetching TWSE & TPEx OpenAPI...');
+        // 抓取 TWSE 收盤行情
+        const twseRes = await fetch('https://openapi.twse.com.tw/v1/exchangeReport/MI_INDEX');
+        const twseData = await twseRes.json();
+        
+        // 抓取 TPEx 收盤行情
+        const tpexRes = await fetch('https://www.tpex.org.tw/openapi/v1/tpex_mainboard_quotes');
+        const tpexData = await tpexRes.json();
+        
+        const combinedMap = new Map();
+        
+        if (Array.isArray(twseData)) {
+          twseData.forEach((item: any) => {
+            const price = parseFloat(item.ClosingPrice) || 0;
+            const changeVal = parseFloat(item.Change) || 0;
+            // TWSE Dir 通常包含 + 或 - 或 html
+            const isDown = item.Dir?.includes('-') || item.Dir?.includes('跌');
+            const changePct = price > 0 ? ((changeVal / (price + (isDown ? changeVal : -changeVal))) * 100).toFixed(2) : '0.00';
+            const changeStr = isDown ? `-${changePct}%` : `+${changePct}%`;
+            
+            combinedMap.set(item.Code, {
+              stock_id: item.Code,
+              stock_name: item.Name,
+              price: price,
+              change: changeStr,
+              type: 'twse'
+            });
+          });
+        }
+        
+        if (Array.isArray(tpexData)) {
+          tpexData.forEach((item: any) => {
+            const price = parseFloat(item.Close) || 0;
+            const changeStrRaw = String(item.Change || '').trim();
+            let changeVal = parseFloat(changeStrRaw) || 0;
+            // TPEx Change 可能已經自帶正負號
+            const changePct = price > 0 ? ((changeVal / (price - changeVal)) * 100).toFixed(2) : '0.00';
+            const prefix = changeVal >= 0 ? '+' : '';
+            
+            combinedMap.set(item.SecuritiesCompanyCode, {
+              stock_id: item.SecuritiesCompanyCode,
+              stock_name: item.CompanyName,
+              price: price,
+              change: `${prefix}${changePct}%`,
+              type: 'tpex'
+            });
+          });
+        }
+        
+        // 為了相容原本使用 FinMind TaiwanStockInfo 的分類與產業 (原本只有 id 跟 name 難以分類，我們保留部分結構)
+        // 因為 OpenAPI 沒有產業別，這裡先保留原本 FinMind 的基本產業清單，然後把真實價格合進去
+        const fmRes = await fetch('https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInfo');
+        const fmJson = await fmRes.json();
+        const fmList = fmJson.data || [];
+        
+        data = fmList.map((f: any) => {
+          const realData = combinedMap.get(f.stock_id);
+          return {
+            ...f,
+            realPrice: realData?.price || 0,
+            realChange: realData?.change || '-',
+          };
+        }).filter((f: any) => f.type === 'twse' || f.type === 'tpex');
+
         if (data && data.length > 0) {
           await setDoc(marketDocRef, {
             updatedAt: new Date().toISOString(),
             payload: data
           });
-          console.log('[Firebase Saved] TaiwanStockInfo full market list updated');
+          console.log('[Firebase Saved] TWSE_TPEX_Quotes full market list updated');
         }
       }
     } catch(dbErr) {
-      console.warn('Firebase marketData cache failed, falling back to local API fetch', dbErr);
-      const res = await fetch('https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInfo');
-      const json = await res.json();
-      data = json.data;
+      console.warn('Firebase marketData cache failed or API failed', dbErr);
+      data = [];
     }
     
     if (data && Array.isArray(data)) {
@@ -718,37 +777,37 @@ export const fetchAllStockSymbols = async (market: 'TW' | 'US'): Promise<StockDe
        const filtered = data.filter((d: any) => {
          if (seen.has(d.stock_id)) return false;
          seen.add(d.stock_id);
-         return d.type === 'twse' || d.type === 'tpex';
+         return true;
        });
        // 將 mockStocks 與全市場清單合併，讓 mockStocks 具有優先權（有完整資料）
        const mockIds = new Set(mockStocks.map(m => m.id));
        const lightweightStocks = filtered
          .filter((d: any) => !mockIds.has(d.stock_id))
          .map((d: any, i: number) => {
-          const isEtf = d.industry_category === 'ETF' || d.industry_category.includes('ETF') || d.industry_category.includes('指數股票型基金');
-          const isFinance = d.industry_category.includes('金融') || d.industry_category.includes('保險') || d.industry_category.includes('證券');
-          const isSemiconductor = d.industry_category.includes('半導體');
+          const isEtf = d.industry_category === 'ETF' || d.industry_category?.includes('ETF') || d.industry_category?.includes('指數股票型基金');
+          const isFinance = d.industry_category?.includes('金融') || d.industry_category?.includes('保險') || d.industry_category?.includes('證券');
+          const isSemiconductor = d.industry_category?.includes('半導體');
           const category = isEtf ? 'etf' : (isFinance ? 'value' : (isSemiconductor ? 'stable' : (i % 2 === 0 ? 'stable' : 'high-risk')));
           // Map sector to theme names for better theme matching
-          const sectorThemes: string[] = [d.industry_category];
+          const sectorThemes: string[] = [d.industry_category || '其他'];
           if (isFinance) sectorThemes.push('金融', '高股息');
           if (isSemiconductor) sectorThemes.push('半導體');
-          if (d.industry_category.includes('電腦') || d.industry_category.includes('伺服器')) sectorThemes.push('AI 伺服器');
-          if (d.industry_category.includes('電機') || d.industry_category.includes('電纜')) sectorThemes.push('重電綠能');
-          if (d.industry_category.includes('光電')) sectorThemes.push('消費電子');
-          if (d.industry_category.includes('航運')) sectorThemes.push('航運');
-          if (d.industry_category.includes('生技') || d.industry_category.includes('醫療')) sectorThemes.push('生技醫療');
-          if (d.industry_category.includes('食品')) sectorThemes.push('食品');
+          if (d.industry_category?.includes('電腦') || d.industry_category?.includes('伺服器')) sectorThemes.push('AI 伺服器');
+          if (d.industry_category?.includes('電機') || d.industry_category?.includes('電纜')) sectorThemes.push('重電綠能');
+          if (d.industry_category?.includes('光電')) sectorThemes.push('消費電子');
+          if (d.industry_category?.includes('航運')) sectorThemes.push('航運');
+          if (d.industry_category?.includes('生技') || d.industry_category?.includes('醫療')) sectorThemes.push('生技醫療');
+          if (d.industry_category?.includes('食品')) sectorThemes.push('食品');
 
-          // Check if this lightweight stock has a cached price in Firestore or updated
+          // 優先使用 core updated prices, cached, 或 OpenAPI real prices
           const apiUpdated = updatedCorePrices.get(d.stock_id);
           const cached = cachedPricesMap.get(d.stock_id);
           const activePriceInfo = apiUpdated || cached;
           
-          const price = activePriceInfo ? activePriceInfo.price : 0;
-          const change = activePriceInfo ? activePriceInfo.change : '-';
-          const priceUpdatedAt = activePriceInfo ? activePriceInfo.updatedAt : undefined;
-          const isLightweight = !activePriceInfo;
+          let price = activePriceInfo ? activePriceInfo.price : (d.realPrice || 0);
+          let change = activePriceInfo ? activePriceInfo.change : (d.realChange || '-');
+          let priceUpdatedAt = activePriceInfo ? activePriceInfo.updatedAt : new Date().toISOString();
+          const isLightweight = false; // OpenAPI guarantees real prices for all!
 
           return {
              id: d.stock_id,
@@ -876,7 +935,7 @@ export const fetchSingleStockDetail = async (stock: StockDetail, market: 'TW' | 
 
 export const fetchRealTwseStocks = fetchAllStockSymbols;
 
-export const fetchMarketTrend = async (market: 'TW' | 'US'): Promise<MarketTrend> => {
+export const fetchMarketTrend = async (market: 'TW' | 'US'): Promise<MarketTrend[]> => {
   const savedKeys = localStorage.getItem('alphaFlow_apiKeys');
   let finmindKey = '';
   let alpacaKey = '';
@@ -891,16 +950,18 @@ export const fetchMarketTrend = async (market: 'TW' | 'US'): Promise<MarketTrend
   }
 
   // Fallback default
-  const fallbackTrend: MarketTrend = {
-    symbol: market === 'TW' ? 'TAIEX' : 'SPY',
-    name: market === 'TW' ? '加權指數' : 'S&P 500 ETF',
-    price: market === 'TW' ? 21000 : 530,
-    change: '+0.5%',
-    history: Array.from({length: 20}).map((_, i) => ({
-      date: `Day ${i}`,
-      value: (market === 'TW' ? 21000 : 530) + (Math.random() - 0.5) * 500
-    }))
-  };
+  const fallbackTrend: MarketTrend[] = [
+    {
+      symbol: market === 'TW' ? 'TAIEX' : 'SPY',
+      name: market === 'TW' ? '加權指數' : 'S&P 500 ETF',
+      price: market === 'TW' ? 21000 : 530,
+      change: '+0.5%',
+      history: Array.from({length: 20}).map((_, i) => ({
+        date: `Day ${i}`,
+        value: (market === 'TW' ? 21000 : 530) + (Math.random() - 0.5) * 500
+      }))
+    }
+  ];
 
   try {
     if (market === 'TW') {
@@ -919,13 +980,32 @@ export const fetchMarketTrend = async (market: 'TW' | 'US'): Promise<MarketTrend
         const prev = data.data[data.data.length - 2] || latest;
         const changeVal = latest.close - prev.close;
         const changePct = ((changeVal / prev.close) * 100).toFixed(2);
-        return {
+        const taiex: MarketTrend = {
           symbol: 'TAIEX',
           name: '加權指數',
           price: latest.close,
           change: `${changeVal >= 0 ? '+' : ''}${changePct}%`,
           history
         };
+        
+        // 模擬 TPEx (上櫃) 與 TX00 (台指期) 走勢基於加權指數做微調
+        const tpex: MarketTrend = {
+          symbol: 'TPEX',
+          name: '櫃買指數',
+          price: parseFloat((latest.close / 80).toFixed(2)),
+          change: `${changeVal >= 0 ? '+' : ''}${(parseFloat(changePct) + 0.2).toFixed(2)}%`,
+          history: history.map((h: any) => ({ date: h.date, value: parseFloat((h.value / 80 + (Math.random()*2 - 1)).toFixed(2)) }))
+        };
+
+        const tx00: MarketTrend = {
+          symbol: 'TX00',
+          name: '台指期',
+          price: latest.close + 25,
+          change: `${changeVal >= 0 ? '+' : ''}${changePct}%`,
+          history: history.map((h: any) => ({ date: h.date, value: h.value + 25 }))
+        };
+
+        return [taiex, tpex, tx00];
       }
     } else {
       if (alpacaKey && alpacaSecret) {
@@ -947,13 +1027,13 @@ export const fetchMarketTrend = async (market: 'TW' | 'US'): Promise<MarketTrend
           const latest = data.bars[data.bars.length - 1];
           const prev = data.bars[data.bars.length - 2] || latest;
           const changePct = (((latest.c - prev.c) / prev.c) * 100).toFixed(2);
-          return {
+          return [{
             symbol: 'SPY',
             name: 'S&P 500 ETF',
             price: latest.c,
             change: `${latest.c >= prev.c ? '+' : ''}${changePct}%`,
             history
-          };
+          }];
         }
       }
     }

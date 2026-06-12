@@ -12,8 +12,9 @@ export default function DailyFocusPanel({ market, onSelectStock, pool, watchlist
   toggleWatchlist: (id: string, e?: React.MouseEvent) => void;
 }) {
   const [selectedTab, setSelectedTab] = useState<'top'|'hot'>('top');
+  const [selectedTrendIndex, setSelectedTrendIndex] = useState(0);
   const [results, setResults] = useState<StockDetail[]>([]);
-  const [trend, setTrend] = useState<MarketTrend | null>(null);
+  const [trends, setTrends] = useState<MarketTrend[]>([]);
   const [news, setNews] = useState<NewsArticle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -33,7 +34,7 @@ export default function DailyFocusPanel({ market, onSelectStock, pool, watchlist
       fetchMarketTrend(market),
       fetchMarketNews(market)
     ]).then(([trendData, newsData]) => {
-      setTrend(trendData);
+      setTrends(trendData);
       setNews(newsData);
       setIsLoading(false);
     });
@@ -61,26 +62,37 @@ export default function DailyFocusPanel({ market, onSelectStock, pool, watchlist
             <Activity className="w-4 h-4 text-emerald-400" /> 市場走勢
           </h3>
           
-          {isLoading || !trend ? (
+          {isLoading || trends.length === 0 ? (
              <div className="flex-1 flex items-center justify-center text-slate-500 text-sm">載入走勢中...</div>
           ) : (
             <>
-              <div className="flex items-end justify-between mb-6">
+              <div className="flex bg-[#0d101a] rounded-lg p-1 border border-slate-800 mb-4 w-max">
+                {trends.map((t, idx) => (
+                  <button 
+                    key={t.symbol} 
+                    onClick={() => setSelectedTrendIndex(idx)}
+                    className={`px-3 py-1 text-[11px] font-bold rounded-md transition-colors ${selectedTrendIndex === idx ? 'bg-emerald-600/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}
+                  >
+                    {t.name}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-end justify-between mb-4">
                 <div>
-                  <p className="text-xs text-slate-500 mb-1">{trend.name} ({trend.symbol})</p>
-                  <p className="text-3xl font-mono font-bold text-white">{trend.price.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
+                  <p className="text-xs text-slate-500 mb-1">{trends[selectedTrendIndex].name} ({trends[selectedTrendIndex].symbol})</p>
+                  <p className="text-3xl font-mono font-bold text-white">{trends[selectedTrendIndex].price.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
                 </div>
-                <div className={`px-2 py-1 rounded text-sm font-bold ${trend.change.startsWith('+') ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
-                  {trend.change}
+                <div className={`px-2 py-1 rounded text-sm font-bold ${trends[selectedTrendIndex].change.startsWith('+') ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                  {trends[selectedTrendIndex].change}
                 </div>
               </div>
-              <div className="h-[180px] w-full -ml-4">
+              <div className="h-[140px] w-full -ml-4">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={trend.history}>
+                  <AreaChart data={trends[selectedTrendIndex].history}>
                     <defs>
                       <linearGradient id="trendColor" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={trend.change.startsWith('+') ? '#10b981' : '#f43f5e'} stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor={trend.change.startsWith('+') ? '#10b981' : '#f43f5e'} stopOpacity={0}/>
+                        <stop offset="5%" stopColor={trends[selectedTrendIndex].change.startsWith('+') ? '#10b981' : '#f43f5e'} stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor={trends[selectedTrendIndex].change.startsWith('+') ? '#10b981' : '#f43f5e'} stopOpacity={0}/>
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
@@ -92,7 +104,7 @@ export default function DailyFocusPanel({ market, onSelectStock, pool, watchlist
                       labelStyle={{ color: '#94a3b8' }}
                       formatter={(val: number) => [val.toFixed(2), '指數']}
                     />
-                    <Area type="monotone" dataKey="value" stroke={trend.change.startsWith('+') ? '#10b981' : '#f43f5e'} strokeWidth={3} fill="url(#trendColor)" />
+                    <Area type="monotone" dataKey="value" stroke={trends[selectedTrendIndex].change.startsWith('+') ? '#10b981' : '#f43f5e'} strokeWidth={3} fill="url(#trendColor)" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>

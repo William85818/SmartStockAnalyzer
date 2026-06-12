@@ -20,10 +20,11 @@ import ThemesPanel from './components/ThemesPanel';
 import FilterPanel from './components/FilterPanel';
 import EtfThemesPanel from './components/EtfThemesPanel';
 import HeatmapPanel from './components/HeatmapPanel';
+import MarketOverviewPanel from './components/MarketOverviewPanel';
 import SettingsModal from './components/SettingsModal';
-import { Settings, Globe, Loader2, LayoutGrid } from 'lucide-react';
+import { Settings, Globe, Loader2, LayoutGrid, ActivitySquare } from 'lucide-react';
 
-type Route = 'screener' | 'watchlist' | 'themes' | 'filter' | 'etfthemes' | 'heatmap';
+type Route = 'screener' | 'watchlist' | 'themes' | 'filter' | 'etfthemes' | 'heatmap' | 'overview';
 
 export default function App() {
   const [activeRoute, setActiveRoute] = useState<Route>('screener');
@@ -174,6 +175,18 @@ export default function App() {
             <LayoutGrid className="w-5 h-5" />
             產業熱力圖
           </button>
+
+          <button 
+            onClick={() => handleNav('overview')}
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-sm font-medium whitespace-nowrap ${
+              activeRoute === 'overview' 
+                ? 'bg-orange-600/10 text-orange-400 border border-orange-500/20' 
+                : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 border border-transparent'
+            }`}
+          >
+            <ActivitySquare className="w-5 h-5" />
+            市場概況
+          </button>
           
           <button 
             onClick={() => handleNav('watchlist')}
@@ -287,6 +300,11 @@ export default function App() {
               />
             ) : activeRoute === 'heatmap' ? (
               <HeatmapPanel 
+                pool={realStocks} 
+                onSelectStock={(s) => { handleSelectStock(s); }}
+              />
+            ) : activeRoute === 'overview' ? (
+              <MarketOverviewPanel 
                 pool={realStocks} 
                 onSelectStock={(s) => { handleSelectStock(s); }}
               />
