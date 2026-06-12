@@ -998,6 +998,11 @@ export const fetchMarketTrend = async (market: 'TW' | 'US'): Promise<MarketTrend
     }
   ];
 
+  if (role === 'guest') {
+    console.log('[Guest Mode] Market trend live fetch blocked.');
+    return fallbackTrend;
+  }
+
   try {
     if (market === 'TW') {
       const d = new Date();
