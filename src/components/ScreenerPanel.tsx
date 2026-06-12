@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Heart, Zap, ShieldCheck, Building2, Activity } from 'lucide-react';
+import { Search, Heart, Zap, Activity } from 'lucide-react';
 import { strategies, StockDetail } from '../data';
 import { motion, AnimatePresence } from 'motion/react';
 import DailyFocusPanel from './DailyFocusPanel';

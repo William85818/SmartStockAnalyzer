@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { PieChart, Heart, Search, ChevronRight } from 'lucide-react';
+import { PieChart, Heart, ChevronRight } from 'lucide-react';
 import { mockEtfs, mockEtfsUs, etfThemes, etfThemesUs, StockDetail } from '../data';
 
 export default function EtfThemesPanel({ market, onSelectStock, watchlist, toggleWatchlist }: {

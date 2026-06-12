@@ -1,30 +1,33 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Filter, ChevronRight, Heart } from 'lucide-react';
-import { mockStocks, StockDetail } from '../data';
+import { Filter, ChevronRight, Heart, Search } from 'lucide-react';
+import { StockDetail } from '../data';
 
-export default function FilterPanel({ onSelectStock, watchlist, toggleWatchlist }: {
+export default function FilterPanel({ onSelectStock, watchlist, toggleWatchlist, pool }: {
   onSelectStock: (s: StockDetail) => void;
   watchlist: string[];
   toggleWatchlist: (id: string, e?: React.MouseEvent) => void;
+  pool: StockDetail[];
 }) {
-  const [sector, setSector] = useState<string>('all');
+  const [selectedSector, setSelectedSector] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
   const [maxPe, setMaxPe] = useState<number>(30);
   const [minYield, setMinYield] = useState<number>(0);
 
   const sectors = useMemo(() => {
-    const s = new Set(mockStocks.map(stock => stock.sector));
-    return Array.from(s);
-  }, []);
+    const s = new Set(pool.map(stock => stock.sector));
+    return ['All', ...Array.from(s)];
+  }, [pool]);
 
   const filteredStocks = useMemo(() => {
-    return mockStocks.filter(stock => {
-      const matchSector = sector === 'all' || stock.sector === sector;
+    return pool.filter(stock => {
+      const matchSector = selectedSector === 'All' || stock.sector === selectedSector;
+      const matchSearch = stock.name.toLowerCase().includes(searchQuery.toLowerCase()) || stock.id.includes(searchQuery);
       const matchPe = stock.peRatio <= maxPe;
       const matchYield = stock.yieldRate >= minYield;
-      return matchSector && matchPe && matchYield;
-    }).slice(0, 10); // 一次列出最多10檔
-  }, [sector, maxPe, minYield]);
+      return matchSector && matchSearch && matchPe && matchYield;
+    }).slice(0, 10);
+  }, [selectedSector, searchQuery, maxPe, minYield, pool]);
 
   return (
     <motion.div key="filter" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="max-w-5xl">
@@ -40,11 +43,11 @@ export default function FilterPanel({ onSelectStock, watchlist, toggleWatchlist 
         <div className="flex-1 w-full space-y-2">
           <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">產業類別</label>
           <select 
-            value={sector}
-            onChange={(e) => setSector(e.target.value)}
+            value={selectedSector}
+            onChange={(e) => setSelectedSector(e.target.value)}
             className="w-full bg-[#0d101a] border border-slate-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 appearance-none"
           >
-            <option value="all">全部產業</option>
+            <option value="All">全部產業</option>
             {sectors.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>

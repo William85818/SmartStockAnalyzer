@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Cpu, Search, Heart, Flame, Filter, LayoutDashboard, PieChart, Home, AlertCircle
+  Cpu, Heart, Flame, Filter, PieChart, Home, AlertCircle
 } from 'lucide-react';
 import { mockStocks, mockUsStocks, StockDetail, fetchRealTwseStocks, fetchSingleStockDetail, checkIsDemoMode } from './data';
 
@@ -234,7 +234,7 @@ export default function App() {
             ) : activeRoute === 'screener' ? (
               <ScreenerPanel 
                 market={market}
-                onSelectStock={handleSelectStock} 
+                onSelectStock={(s) => { handleSelectStock(s); }} 
                 watchlist={watchlist} 
                 toggleWatchlist={toggleWatchlist} 
                 pool={realStocks.filter(s => s.category !== 'etf')}
@@ -242,7 +242,7 @@ export default function App() {
             ) : activeRoute === 'themes' ? (
               <ThemesPanel 
                 market={market}
-                onSelectStock={handleSelectStock} 
+                onSelectStock={(s) => { handleSelectStock(s); }} 
                 watchlist={watchlist} 
                 toggleWatchlist={toggleWatchlist} 
                 pool={realStocks.filter(s => s.category !== 'etf')}
@@ -250,13 +250,13 @@ export default function App() {
             ) : activeRoute === 'etfthemes' ? (
               <EtfThemesPanel 
                 market={market}
-                onSelectStock={handleSelectStock}
+                onSelectStock={(s) => { handleSelectStock(s); }}
                 watchlist={watchlist} 
                 toggleWatchlist={toggleWatchlist} 
               />
             ) : activeRoute === 'filter' ? (
               <FilterPanel 
-                onSelectStock={handleSelectStock} 
+                onSelectStock={(s) => { handleSelectStock(s); }} 
                 watchlist={watchlist} 
                 toggleWatchlist={toggleWatchlist} 
                 pool={realStocks.filter(s => s.category !== 'etf')}
@@ -264,7 +264,7 @@ export default function App() {
             ) : activeRoute === 'watchlist' ? (
               <WatchlistPanel 
                 watchlistedStocks={watchlistedStocks} 
-                onSelectStock={handleSelectStock} 
+                onSelectStock={(s) => { handleSelectStock(s); }} 
                 toggleWatchlist={toggleWatchlist}
                 onGoToScreener={() => handleNav('screener')}
               />
