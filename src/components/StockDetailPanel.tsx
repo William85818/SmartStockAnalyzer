@@ -255,12 +255,9 @@ export default function StockDetailPanel({ stock: initialStock, setStock, watchl
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        
-        {/* 左側主要圖表區 */}
-        <div className="xl:col-span-2 space-y-6">
-          
-          {/* 近 20 日走勢與成交量 */}
-          <div className="bg-[#111624] p-5 sm:p-6 rounded-2xl border border-slate-800 shadow-lg">
+        {/* 左側：近 20 日走勢與成交量 */}
+        <div className="xl:col-span-2">
+          <div className="bg-[#111624] p-5 sm:p-6 rounded-2xl border border-slate-800 shadow-lg h-full">
             <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
               <Activity className="w-5 h-5 text-emerald-400"/> 近 20 日 K線與走勢圖
             </h3>
@@ -295,47 +292,11 @@ export default function StockDetailPanel({ stock: initialStock, setStock, watchl
               </ResponsiveContainer>
             </div>
           </div>
-
-          {/* 本益比河流圖 */}
-          <div className="bg-[#111624] p-5 sm:p-6 rounded-2xl border border-slate-800 shadow-lg">
-            <h3 className="text-lg font-bold text-white flex items-center justify-between mb-6">
-               <div className="flex items-center gap-2">
-                 <TrendingUp className="w-5 h-5 text-indigo-400"/> 本益比河流圖 (PE Ratio River)
-               </div>
-               <span className="text-xs text-slate-500 font-mono">近五年 (60 月)</span>
-            </h3>
-            <div className="h-[350px] w-full text-xs">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={stock.peRiverData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#ffffff" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#ffffff" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                  <XAxis dataKey="date" stroke="#64748b" tick={{fill: '#64748b'}} tickMargin={10} axisLine={false} minTickGap={20} />
-                  <YAxis stroke="#64748b" tick={{fill: '#64748b'}} axisLine={false} tickLine={false} />
-                  
-                  {/* Updated thresholds for 5-year broader bands: 10x to 30x */}
-                  <Area type="monotone" dataKey="pe30" stackId="1" stroke="none" fill="#ef4444" fillOpacity={0.15} name="30x" />
-                  <Area type="monotone" dataKey="pe25" stackId="1" stroke="none" fill="#f97316" fillOpacity={0.15} name="25x" />
-                  <Area type="monotone" dataKey="pe20" stackId="1" stroke="none" fill="#eab308" fillOpacity={0.15} name="20x" />
-                  <Area type="monotone" dataKey="pe15" stackId="1" stroke="none" fill="#22c55e" fillOpacity={0.15} name="15x" />
-                  <Area type="monotone" dataKey="pe10" stackId="1" stroke="none" fill="#3b82f6" fillOpacity={0.15} name="10x" />
-                  
-                  <Area type="natural" dataKey="price" stroke="#ffffff" strokeWidth={3} fill="url(#colorPrice)" name="真實股價" />
-                  <RechartsTooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px' }} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
         </div>
 
-        {/* 右側：法人與AI報告 */}
-        <div className="space-y-6">
-          <div className="bg-[#111624] p-5 sm:p-6 rounded-2xl border border-slate-800 shadow-lg">
+        {/* 右側：三大法人近 5 日買賣超 */}
+        <div className="xl:col-span-1">
+          <div className="bg-[#111624] p-5 sm:p-6 rounded-2xl border border-slate-800 shadow-lg h-full">
             <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-emerald-400"/> 三大法人近 5 日買賣超
             </h3>
@@ -355,75 +316,104 @@ export default function StockDetailPanel({ stock: initialStock, setStock, watchl
               </ResponsiveContainer>
             </div>
           </div>
+        </div>
+      </div>
 
-          <div className="bg-[#111624] rounded-2xl border border-slate-800 shadow-lg flex flex-col overflow-hidden relative h-fit">
-            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    <FileSearch className="w-5 h-5 text-blue-400"/> 股票深度分析總結
-                </h3>
-                <button 
-                  onClick={handleGenerateReport} 
-                  disabled={isGenerating}
-                  className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-                >
-                  {isGenerating ? <BrainCircuit className="w-3 h-3 animate-pulse" /> : <BrainCircuit className="w-3 h-3" />}
-                  {isGenerating ? '產生中...' : '重新生成 AI 報告'}
-                </button>
+      {/* 本益比河流圖 (Full width) */}
+      <div className="bg-[#111624] p-5 sm:p-6 rounded-2xl border border-slate-800 shadow-lg">
+        <h3 className="text-lg font-bold text-white flex items-center justify-between mb-6">
+           <div className="flex items-center gap-2">
+             <TrendingUp className="w-5 h-5 text-indigo-400"/> 本益比河流圖 (PE Ratio River)
+           </div>
+           <span className="text-xs text-slate-500 font-mono">近五年 (60 月)</span>
+        </h3>
+        <div className="h-[350px] w-full text-xs">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={stock.peRiverData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#ffffff" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#ffffff" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+              <XAxis dataKey="date" stroke="#64748b" tick={{fill: '#64748b'}} tickMargin={10} axisLine={false} minTickGap={20} />
+              <YAxis stroke="#64748b" tick={{fill: '#64748b'}} axisLine={false} tickLine={false} />
+              <Area type="monotone" dataKey="pe30" stackId="1" stroke="none" fill="#ef4444" fillOpacity={0.15} name="30x" />
+              <Area type="monotone" dataKey="pe25" stackId="1" stroke="none" fill="#f97316" fillOpacity={0.15} name="25x" />
+              <Area type="monotone" dataKey="pe20" stackId="1" stroke="none" fill="#eab308" fillOpacity={0.15} name="20x" />
+              <Area type="monotone" dataKey="pe15" stackId="1" stroke="none" fill="#22c55e" fillOpacity={0.15} name="15x" />
+              <Area type="monotone" dataKey="pe10" stackId="1" stroke="none" fill="#3b82f6" fillOpacity={0.15} name="10x" />
+              <Area type="natural" dataKey="price" stroke="#ffffff" strokeWidth={3} fill="url(#colorPrice)" name="真實股價" />
+              <RechartsTooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px' }} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* 股票深度分析總結 (Full width) */}
+      <div className="bg-[#111624] rounded-2xl border border-slate-800 shadow-lg flex flex-col overflow-hidden relative w-full">
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
+        <div className="p-6 lg:p-8">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <FileSearch className="w-6 h-6 text-blue-400"/> 股票深度分析總結
+            </h3>
+            <button 
+              onClick={handleGenerateReport} 
+              disabled={isGenerating}
+              className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {isGenerating ? <BrainCircuit className="w-4 h-4 animate-pulse" /> : <BrainCircuit className="w-4 h-4" />}
+              {isGenerating ? '產生中...' : '重新生成 AI 報告'}
+            </button>
+          </div>
+          <p className="text-sm text-slate-500 font-mono mb-8">Generated by AlphaFlow AI • {stock.actionAdvice.aiConfidence}% Confidence</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="bg-slate-900/50 p-5 rounded-xl border border-slate-800/80 hover:bg-slate-800/50 transition-colors h-full">
+              <h4 className="text-sm font-bold text-purple-400 mb-3 flex items-center gap-2">
+                <Landmark className="w-4 h-4"/> 基本面分析
+              </h4>
+              <p className="text-[14px] leading-relaxed text-slate-300 font-light">{stock.analysisSummary?.fundamental || stock.aiReport.health}</p>
+            </div>
+            <div className="bg-slate-900/50 p-5 rounded-xl border border-slate-800/80 hover:bg-slate-800/50 transition-colors h-full">
+              <h4 className="text-sm font-bold text-blue-400 mb-3 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4"/> 技術分析
+              </h4>
+              <p className="text-[14px] leading-relaxed text-slate-300 font-light">{stock.analysisSummary?.technical || stock.aiReport.trend}</p>
+            </div>
+            <div className="bg-slate-900/50 p-5 rounded-xl border border-slate-800/80 hover:bg-slate-800/50 transition-colors h-full">
+              <h4 className="text-sm font-bold text-emerald-400 mb-3 flex items-center gap-2">
+                <Newspaper className="w-4 h-4"/> 籌碼與消息
+              </h4>
+              <p className="text-[14px] leading-relaxed text-slate-300 font-light">{stock.analysisSummary?.chips || stock.aiReport.prediction}</p>
+            </div>
+            <div className="bg-slate-900/50 p-5 rounded-xl border border-slate-800/80 hover:bg-slate-800/50 transition-colors h-full">
+              <h4 className="text-sm font-bold text-rose-400 mb-3 flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4"/> 潛在風險分析
+              </h4>
+              <p className="text-[14px] leading-relaxed text-slate-300 font-light">{stock.analysisSummary?.risk || '【系統性風險】需留意大盤回檔影響，以及產業庫存調整之不確定性。'}</p>
+            </div>
+          </div>
+
+          {/* 獨立強調的操作建議 */}
+          <div className={`p-6 rounded-xl border ${stock.actionAdvice.action === 'BUY' ? 'bg-emerald-500/10 border-emerald-500/30' : stock.actionAdvice.action === 'SELL' ? 'bg-rose-500/10 border-rose-500/30' : 'bg-blue-500/10 border-blue-500/30'}`}>
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+              <div className={`px-6 py-4 shrink-0 text-center rounded-xl font-black text-2xl ${stock.actionAdvice.action === 'BUY' ? 'bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)]' : stock.actionAdvice.action === 'SELL' ? 'bg-rose-500 text-white shadow-[0_0_20px_rgba(244,63,94,0.3)]' : 'bg-blue-500 text-white shadow-[0_0_20px_rgba(59,130,246,0.3)]'}`}>
+                {stock.actionAdvice.action}
               </div>
-              <p className="text-xs text-slate-500 font-mono mb-6">Generated by AlphaFlow AI • {stock.actionAdvice.aiConfidence}% Confidence</p>
-              
-              <div className="space-y-4">
-                <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800/80 hover:bg-slate-800/50 transition-colors">
-                  <h4 className="text-sm font-semibold text-purple-400 mb-2 flex items-center gap-2">
-                    <Landmark className="w-4 h-4"/> 基本面分析
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-base font-bold text-white flex items-center gap-2">
+                    <BrainCircuit className="w-5 h-5" /> AI 綜合操作建議
                   </h4>
-                  <p className="text-[13px] leading-relaxed text-slate-300 font-light">{stock.analysisSummary?.fundamental || stock.aiReport.health}</p>
                 </div>
-                <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800/80 hover:bg-slate-800/50 transition-colors">
-                  <h4 className="text-sm font-semibold text-blue-400 mb-2 flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4"/> 技術分析
-                  </h4>
-                  <p className="text-[13px] leading-relaxed text-slate-300 font-light">{stock.analysisSummary?.technical || stock.aiReport.trend}</p>
-                </div>
-                <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800/80 hover:bg-slate-800/50 transition-colors">
-                  <h4 className="text-sm font-semibold text-emerald-400 mb-2 flex items-center gap-2">
-                    <Newspaper className="w-4 h-4"/> 籌碼與消息
-                  </h4>
-                  <p className="text-[13px] leading-relaxed text-slate-300 font-light">{stock.analysisSummary?.chips || stock.aiReport.prediction}</p>
-                </div>
-                <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800/80 hover:bg-slate-800/50 transition-colors">
-                  <h4 className="text-sm font-semibold text-rose-400 mb-2 flex items-center gap-2">
-                    <ShieldAlert className="w-4 h-4"/> 潛在風險分析
-                  </h4>
-                  <p className="text-[13px] leading-relaxed text-slate-300 font-light">{stock.analysisSummary?.risk || '【系統性風險】需留意大盤回檔影響，以及產業庫存調整之不確定性。'}</p>
-                </div>
-
-                {/* 獨立強調的操作建議 */}
-                <div className={`mt-4 p-5 rounded-xl border ${stock.actionAdvice.action === 'BUY' ? 'bg-emerald-500/10 border-emerald-500/30' : stock.actionAdvice.action === 'SELL' ? 'bg-rose-500/10 border-rose-500/30' : 'bg-blue-500/10 border-blue-500/30'}`}>
-                  <div className="flex flex-col gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`px-4 py-2 shrink-0 text-center rounded-lg font-black text-lg ${stock.actionAdvice.action === 'BUY' ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]' : stock.actionAdvice.action === 'SELL' ? 'bg-rose-500 text-white shadow-[0_0_15px_rgba(244,63,94,0.3)]' : 'bg-blue-500 text-white shadow-[0_0_15px_rgba(59,130,246,0.3)]'}`}>
-                        {stock.actionAdvice.action}
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-white mb-0.5 flex items-center gap-2">
-                          <BrainCircuit className="w-4 h-4" /> AI 綜合操作建議
-                        </h4>
-                        <p className={`text-[11px] font-mono ${stock.actionAdvice.aiConfidence > 85 ? 'text-emerald-400' : 'text-blue-400'}`}>
-                          Confidence Score: {stock.actionAdvice.aiConfidence}%
-                        </p>
-                      </div>
-                    </div>
-                    <p className="text-[13px] text-slate-200 leading-relaxed font-normal">{stock.analysisSummary?.advice || stock.actionAdvice.comment}</p>
-                  </div>
-                </div>
+                <p className="text-[15px] text-slate-200 leading-relaxed font-normal">{stock.analysisSummary?.advice || stock.actionAdvice.comment}</p>
               </div>
             </div>
           </div>
         </div>
-
       </div>
     </motion.div>
   );
