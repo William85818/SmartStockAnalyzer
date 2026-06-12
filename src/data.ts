@@ -575,9 +575,11 @@ export const fetchSingleStockDetail = async (stock: StockDetail, market: 'TW' | 
       d.setDate(d.getDate() - 20);
       const startStr = d.toISOString().split('T')[0];
       
-      const url = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id=${stock.id}&start_date=${startStr}&end_date=${todayStr}${finmindKey ? `&token=${finmindKey}` : ''}`;
+      // Use local proxy API
+      const url = `http://localhost:3001/api/finmind/price/${stock.id}?startStr=${startStr}&todayStr=${todayStr}${finmindKey ? `&finmindKey=${finmindKey}` : ''}`;
       const res = await fetch(url);
-      const data = await res.json();
+      const json = await res.json();
+      const data = json.data;
       if (data.data && data.data.length >= 2) {
          const latest = data.data[data.data.length - 1];
          const prev = data.data[data.data.length - 2];
@@ -733,9 +735,11 @@ export const fetchMarketNews = async (market: 'TW' | 'US'): Promise<NewsArticle[
       const d = new Date();
       d.setDate(d.getDate() - 3);
       const startDate = d.toISOString().split('T')[0];
-      const url = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockNews&data_id=2330&start_date=${startDate}${finmindKey ? '&token='+finmindKey : ''}`;
+      // Use local proxy API
+      const url = `http://localhost:3001/api/finmind/news/2330?startStr=${startDate}${finmindKey ? '&finmindKey='+finmindKey : ''}`;
       const res = await fetch(url);
-      const data = await res.json();
+      const json = await res.json();
+      const data = json.data;
       if (data.msg === 'success' && data.data && data.data.length > 0) {
         return data.data.slice(0, 5).map((item: any, i: number) => ({
           id: i.toString(),

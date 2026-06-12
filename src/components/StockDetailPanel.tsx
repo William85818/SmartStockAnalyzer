@@ -395,11 +395,11 @@ export default function StockDetailPanel({ stock: initialStock, setStock, watchl
               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
               <XAxis dataKey="date" stroke="#64748b" tick={{fill: '#64748b'}} tickMargin={10} axisLine={false} minTickGap={20} />
               <YAxis stroke="#64748b" tick={{fill: '#64748b'}} axisLine={false} tickLine={false} />
-              <Area type="monotone" dataKey="pe30" stackId="1" stroke="none" fill="#ef4444" fillOpacity={0.15} name="30x" />
-              <Area type="monotone" dataKey="pe25" stackId="1" stroke="none" fill="#f97316" fillOpacity={0.15} name="25x" />
-              <Area type="monotone" dataKey="pe20" stackId="1" stroke="none" fill="#eab308" fillOpacity={0.15} name="20x" />
-              <Area type="monotone" dataKey="pe15" stackId="1" stroke="none" fill="#22c55e" fillOpacity={0.15} name="15x" />
-              <Area type="monotone" dataKey="pe10" stackId="1" stroke="none" fill="#3b82f6" fillOpacity={0.15} name="10x" />
+              <Area type="monotone" dataKey="pe30" stroke="none" fill="#ef4444" fillOpacity={0.15} name="30x" />
+              <Area type="monotone" dataKey="pe25" stroke="none" fill="#f97316" fillOpacity={0.15} name="25x" />
+              <Area type="monotone" dataKey="pe20" stroke="none" fill="#eab308" fillOpacity={0.15} name="20x" />
+              <Area type="monotone" dataKey="pe15" stroke="none" fill="#22c55e" fillOpacity={0.15} name="15x" />
+              <Area type="monotone" dataKey="pe10" stroke="none" fill="#3b82f6" fillOpacity={0.15} name="10x" />
               <Area type="natural" dataKey="price" stroke="#ffffff" strokeWidth={3} fill="url(#colorPrice)" name="真實股價" />
               <RechartsTooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px' }} />
             </AreaChart>
