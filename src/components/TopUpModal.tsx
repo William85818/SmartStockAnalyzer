@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, CreditCard, ArrowRight, MessageCircle, Mail, CheckCircle2 } from 'lucide-react';
+import { X, CreditCard, MessageCircle, Mail, CheckCircle2 } from 'lucide-react';
 
 export default function TopUpModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
   const [hasSentEmail, setHasSentEmail] = useState(false);
