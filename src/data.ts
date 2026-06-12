@@ -2,6 +2,28 @@ import { ShieldCheck, Zap, Building2 } from 'lucide-react';
 import { db } from './firebase';
 import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 
+export const fetchSystemKeys = async () => {
+  try {
+    const configRef = doc(db, 'system', 'config');
+    const snap = await getDoc(configRef);
+    if (snap.exists()) {
+      return snap.data();
+    }
+  } catch(e) {}
+  return { finmindKey: '', alpacaKey: '', alpacaSecret: '', openaiKey: '' };
+};
+
+export const getUserRole = () => {
+  try {
+    const userStr = localStorage.getItem('alphaFlow_user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      return user.role || 'guest';
+    }
+  } catch(e) {}
+  return 'guest';
+};
+
 // Firebase cache cleanup: delete entries older than 7 days
 export const cleanupFirebaseCache = async () => {
   try {
@@ -851,9 +873,9 @@ export const fetchSingleStockDetail = async (stock: StockDetail, market: 'TW' | 
      return stock;
   }
   
-  const savedKeys = localStorage.getItem('alphaFlow_apiKeys');
-  let finmindKey = '';
-  try { finmindKey = savedKeys ? JSON.parse(savedKeys).finmindKey : ''; } catch(e){}
+  const keys = await fetchSystemKeys();
+  const finmindKey = keys.finmindKey || '';
+  const role = getUserRole();
 
   try {
       const todayStr = new Date().toISOString().split('T')[0];
@@ -880,6 +902,26 @@ export const fetchSingleStockDetail = async (stock: StockDetail, market: 'TW' | 
       }
 
       if (!data) {
+        if (role === 'guest') {
+          console.log(`[Guest Mode] Real-time fetch blocked for stock: ${stock.id}`);
+          return {
+            ...stock,
+            price: 0,
+            change: '-',
+            dataValue: 'NT$0',
+            aiReport: {
+              trend: '中立',
+              health: '普通',
+              prediction: '觀望',
+              summary: '訪客模式無法獲取即時數據與產生新 AI 報告，請升級會員。',
+              confidence: 0
+            },
+            ...generateMockData(0),
+            ...generateAdvancedMock(0, 15, 3, false),
+            isLightweight: false
+          };
+        }
+
         // Fetch from FinMind
         const url = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id=${stock.id}&start_date=${startStr}&end_date=${todayStr}${finmindKey ? `&token=${finmindKey}` : ''}`;
         const res = await fetch(url);
@@ -1037,18 +1079,11 @@ export const fetchMarketTrend = async (market: 'TW' | 'US'): Promise<MarketTrend
 };
 
 export const fetchMarketNews = async (market: 'TW' | 'US'): Promise<NewsArticle[]> => {
-  const savedKeys = localStorage.getItem('alphaFlow_apiKeys');
-  let finmindKey = '';
-  let alpacaKey = '';
-  let alpacaSecret = '';
-  if (savedKeys) {
-    try {
-      const parsed = JSON.parse(savedKeys);
-      finmindKey = parsed.finmindKey || '';
-      alpacaKey = parsed.alpacaKey || '';
-      alpacaSecret = parsed.alpacaSecret || '';
-    } catch (e) {}
-  }
+  const keys = await fetchSystemKeys();
+  const finmindKey = keys.finmindKey || '';
+  const alpacaKey = keys.alpacaKey || '';
+  const alpacaSecret = keys.alpacaSecret || '';
+  const role = getUserRole();
 
   const fallbackNews: NewsArticle[] = [
     { id: '1', title: market === 'TW' ? '台股大盤創歷史新高，半導體領漲' : 'Fed signals potential rate cuts later this year', summary: '', url: '#', source: 'Market News', publishedAt: new Date().toISOString() },
@@ -1057,6 +1092,10 @@ export const fetchMarketNews = async (market: 'TW' | 'US'): Promise<NewsArticle[
   ];
 
   try {
+    if (role === 'guest') {
+      return fallbackNews;
+    }
+
     if (market === 'TW') {
       const d = new Date();
       d.setDate(d.getDate() - 3);
