@@ -257,6 +257,63 @@ export const mockEtfs: StockDetail[] = [
   }
 ];
 
+export const mockEtfsUs: StockDetail[] = [
+  {
+    id: 'SPY',
+    name: 'SPDR S&P 500 ETF',
+    price: 530.5,
+    change: '+0.5%',
+    category: 'etf',
+    sector: 'ETF',
+    peRatio: 25.5,
+    yieldRate: 1.3,
+    dataLabel: '殖利率',
+    dataValue: '1.3%',
+    reason: '追蹤標普500指數',
+    themes: ['大盤指數'],
+    expenseRatio: 0.09,
+    ...generateMockData(530.5),
+    aiReport: { trend: '多頭', health: '極佳', prediction: '穩健' },
+    ...generateAdvancedMock(530.5, 25.5, 1.3, false)
+  },
+  {
+    id: 'QQQ',
+    name: 'Invesco QQQ Trust',
+    price: 450.2,
+    change: '+1.2%',
+    category: 'etf',
+    sector: 'ETF',
+    peRatio: 30.5,
+    yieldRate: 0.6,
+    dataLabel: '殖利率',
+    dataValue: '0.6%',
+    reason: '追蹤納斯達克100',
+    themes: ['科技創新'],
+    expenseRatio: 0.20,
+    ...generateMockData(450.2),
+    aiReport: { trend: '強勢上攻', health: '佳', prediction: '看好' },
+    ...generateAdvancedMock(450.2, 30.5, 0.6, false)
+  },
+  {
+    id: 'SOXX',
+    name: 'iShares Semiconductor ETF',
+    price: 240.1,
+    change: '+2.1%',
+    category: 'etf',
+    sector: 'ETF',
+    peRatio: 35.0,
+    yieldRate: 0.7,
+    dataLabel: '內扣費用',
+    dataValue: '0.35%',
+    reason: '美國半導體產業',
+    themes: ['半導體'],
+    expenseRatio: 0.35,
+    ...generateMockData(240.1),
+    aiReport: { trend: '強勢上攻', health: '極佳', prediction: '動能強勁' },
+    ...generateAdvancedMock(240.1, 35.0, 0.7, false)
+  }
+];
+
 export const strategies = [
   { id: 'stable', label: '穩健成長', icon: ShieldCheck, desc: '大型權值股，護城河深厚' },
   { id: 'high-risk', label: '高風險高報酬', icon: Zap, desc: '動能強勢，短期爆發力高' },
@@ -272,10 +329,23 @@ export const topThemes = [
   { id: 't6', name: '高股息 (資金避風港)', desc: '高殖利率抗跌股，法人加碼', isBullish: true },
 ];
 
+export const topThemesUs = [
+  { id: 't1', name: 'AI (強勢)', desc: '人工智慧與晶片巨頭', isBullish: true },
+  { id: 't2', name: 'Technology (強勢)', desc: '科技創新領航', isBullish: true },
+  { id: 't3', name: 'Automotive (回測)', desc: '電動車銷量遇挑戰', isBullish: false },
+  { id: 't4', name: '半導體 (強勢)', desc: '全球半導體龍頭動能不減', isBullish: true },
+];
+
 export const etfThemes = [
   { id: 'etf1', name: '市值型', desc: '追蹤大盤，適合長線存放' },
   { id: 'etf2', name: '高股息', desc: '追求高殖利率，配息穩定' },
   { id: 'etf3', name: '科技半導體', desc: '聚焦高彈性的電子科技產業' },
+];
+
+export const etfThemesUs = [
+  { id: 'etf1', name: '大盤指數', desc: '追蹤美國主要大盤，長期穩健' },
+  { id: 'etf2', name: '科技創新', desc: '聚焦高彈性的電子與雲端產業' },
+  { id: 'etf3', name: '半導體', desc: '全球半導體硬體製造與設計' },
 ];
 
 export const fetchMarketData = async (market: 'TW' | 'US'): Promise<StockDetail[]> => {

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Flame, Heart, ChevronRight } from 'lucide-react';
-import { topThemes, StockDetail } from '../data';
+import { topThemes, topThemesUs, StockDetail } from '../data';
 
-export default function ThemesPanel({ onSelectStock, watchlist, toggleWatchlist, pool = [] }: {
+export default function ThemesPanel({ market, onSelectStock, watchlist, toggleWatchlist, pool = [] }: {
+  market: 'TW' | 'US';
   onSelectStock: (stock: StockDetail) => void;
   watchlist: string[];
   toggleWatchlist: (id: string, e?: React.MouseEvent) => void;
@@ -11,7 +12,8 @@ export default function ThemesPanel({ onSelectStock, watchlist, toggleWatchlist,
 }) {
   const [activeTheme, setActiveTheme] = useState<string | null>(null);
 
-  const activeThemeObj = topThemes.find(t => t.id === activeTheme);
+  const currentThemes = market === 'US' ? topThemesUs : topThemes;
+  const activeThemeObj = currentThemes.find(t => t.id === activeTheme);
   const themeName = activeThemeObj?.name.split(' (')[0] || '';
   const themeStocks = activeTheme 
     ? pool.filter(s => s.themes.includes(themeName) || s.themes.some(t => activeThemeObj?.name.includes(t)))
@@ -28,7 +30,7 @@ export default function ThemesPanel({ onSelectStock, watchlist, toggleWatchlist,
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
-        {topThemes.map((theme, i) => (
+        {currentThemes.map((theme, i) => (
           <motion.button
             key={theme.id}
             initial={{ opacity: 0, y: 20 }}

@@ -222,6 +222,7 @@ export default function App() {
               />
             ) : activeRoute === 'themes' ? (
               <ThemesPanel 
+                market={market}
                 onSelectStock={setSelectedStock} 
                 watchlist={watchlist} 
                 toggleWatchlist={toggleWatchlist} 
@@ -229,6 +230,7 @@ export default function App() {
               />
             ) : activeRoute === 'etfthemes' ? (
               <EtfThemesPanel 
+                market={market}
                 onSelectStock={setSelectedStock}
                 watchlist={watchlist} 
                 toggleWatchlist={toggleWatchlist} 

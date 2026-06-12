@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PieChart, Heart, Search, ChevronRight } from 'lucide-react';
-import { mockEtfs, etfThemes, StockDetail } from '../data';
+import { mockEtfs, mockEtfsUs, etfThemes, etfThemesUs, StockDetail } from '../data';
 
-export default function EtfThemesPanel({ onSelectStock, watchlist, toggleWatchlist }: {
+export default function EtfThemesPanel({ market, onSelectStock, watchlist, toggleWatchlist }: {
+  market: 'TW' | 'US';
   onSelectStock: (stock: StockDetail) => void;
   watchlist: string[];
   toggleWatchlist: (id: string, e?: React.MouseEvent) => void;
 }) {
   const [activeTheme, setActiveTheme] = useState<string | null>(null);
 
-  const activeThemeObj = etfThemes.find(t => t.id === activeTheme);
+  const currentThemes = market === 'US' ? etfThemesUs : etfThemes;
+  const currentEtfs = market === 'US' ? mockEtfsUs : mockEtfs;
+
+  const activeThemeObj = currentThemes.find(t => t.id === activeTheme);
   const themeEtfs = activeTheme 
-    ? mockEtfs.filter(s => s.themes.includes(activeThemeObj?.name || ''))
+    ? currentEtfs.filter(s => s.themes.includes(activeThemeObj?.name || ''))
     : [];
 
   return (
@@ -26,7 +30,7 @@ export default function EtfThemesPanel({ onSelectStock, watchlist, toggleWatchli
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-        {etfThemes.map((theme, i) => (
+        {currentThemes.map((theme, i) => (
           <motion.button
             key={theme.id}
             initial={{ opacity: 0, y: 20 }}
