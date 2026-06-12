@@ -80,7 +80,7 @@ export default function App() {
   };
 
   const handleSelectStock = async (stock: StockDetail) => {
-    if (stock.isLightweight) {
+    if (market === 'TW') {
       setIsFetchingDetail(true);
       const detail = await fetchSingleStockDetail(stock, market);
       setSelectedStock(detail);

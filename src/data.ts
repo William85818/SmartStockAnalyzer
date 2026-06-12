@@ -502,7 +502,7 @@ export const fetchMarketData = async (market: 'TW' | 'US'): Promise<StockDetail[
               price: p,
               change: `${isUp ? '+' : ''}${changePct}%`,
               dataValue: `NT$${p}`,
-            priceUpdatedAt: new Date().toISOString(),
+              priceUpdatedAt: new Date().toISOString(),
               ...generateMockData(p),
               aiReport: {
                 ...mockStock.aiReport,
@@ -648,12 +648,15 @@ export const fetchSingleStockDetail = async (stock: StockDetail, market: 'TW' | 
       const docSnap = await getDoc(docRef);
       let data = null;
 
+      let cacheTimestamp = new Date().toISOString();
+
       if (docSnap.exists()) {
         const cache = docSnap.data();
         const cacheAgeMs = Date.now() - new Date(cache.updatedAt).getTime();
         const oneDayMs = 24 * 60 * 60 * 1000;
         if (cacheAgeMs < oneDayMs) {
           data = cache.payload;
+          cacheTimestamp = cache.updatedAt;
           console.log(`[Firebase Cache Hit] ${stock.id} (age: ${Math.round(cacheAgeMs/60000)}min)`);
         }
       }
@@ -663,9 +666,11 @@ export const fetchSingleStockDetail = async (stock: StockDetail, market: 'TW' | 
         const url = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id=${stock.id}&start_date=${startStr}&end_date=${todayStr}${finmindKey ? `&token=${finmindKey}` : ''}`;
         const res = await fetch(url);
         data = await res.json();
+        cacheTimestamp = new Date().toISOString();
         
         if (data.msg === 'success' && data.data && data.data.length > 0) {
-          await setDoc(docRef, { updatedAt: new Date().toISOString(), payload: data });
+          await setDoc(docRef, { updatedAt: cacheTimestamp, payload: data });
+          console.log(`[Firebase Saved] ${stock.id}`);
         }
       }
       if (data.data && data.data.length >= 2) {
@@ -683,7 +688,7 @@ export const fetchSingleStockDetail = async (stock: StockDetail, market: 'TW' | 
            price: p,
            change: `${isUp ? '+' : ''}${changePct}%`,
            dataValue: `NT$${p}`,
-           priceUpdatedAt: new Date().toISOString(),
+           priceUpdatedAt: cacheTimestamp,
            ...generateMockData(p),
            aiReport: {
              trend: isUp ? '多頭' : '空頭',
