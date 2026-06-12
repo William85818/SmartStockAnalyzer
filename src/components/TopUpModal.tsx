@@ -104,7 +104,7 @@ export default function TopUpModal({ isOpen, onClose }: { isOpen: boolean, onClo
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-500">銀行帳號</span>
-                  <span className="text-emerald-400 font-bold text-xl tracking-wider">123456789</span>
+                  <span className="text-emerald-400 font-bold text-xl tracking-wider">417540379512</span>
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t border-slate-700/50">
                   <span className="text-slate-500">升級費用</span>
