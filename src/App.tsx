@@ -99,17 +99,18 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#090b14] text-slate-200 font-sans selection:bg-blue-500/30 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-[#090b14] text-slate-200 font-sans selection:bg-blue-500/30 flex flex-col">
       
       {/* DEMO MODE Banner */}
       {user?.role === 'guest' && !isLoading && (
-        <div className="bg-orange-500 text-white py-1 px-4 text-center text-xs font-bold tracking-widest flex items-center justify-center gap-2 relative z-50 shadow-md">
-          <AlertTriangle className="w-3 h-3" /> DEMO MODE (訪客唯讀模式) - 您正在瀏覽昨日的快取歷史資料，請登入或升級會員獲取即時大數據分析！
+        <div className="bg-orange-500 text-white py-1.5 px-4 text-center text-xs font-bold tracking-widest flex items-center justify-center gap-2 relative z-50 shadow-md w-full">
+          <AlertTriangle className="w-4 h-4" /> DEMO MODE (訪客唯讀模式) - 您正在瀏覽昨日的快取歷史資料，請登入或升級會員獲取即時大數據分析！
         </div>
       )}
 
-      {/* 側邊導覽列 */}
-      {!selectedStock && (
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+        {/* 側邊導覽列 */}
+        {!selectedStock && (
       <aside className="w-full md:w-64 bg-[#0d111d] border-b md:border-b-0 md:border-r border-slate-800/60 p-6 flex flex-col z-20 shrink-0">
         <div className="flex flex-col gap-3 mb-10">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleNav('screener')}>
@@ -371,6 +372,7 @@ export default function App() {
           </AnimatePresence>
         )}
       </main>
+      </div>
 
     </div>
   );
