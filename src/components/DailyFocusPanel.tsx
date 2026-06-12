@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, Globe, TrendingUp, TrendingDown, Clock, Activity, Newspaper, ChevronRight } from 'lucide-react';
+import { Heart, Globe, TrendingUp, TrendingDown, Activity, Newspaper, ChevronRight } from 'lucide-react';
 import { StockDetail, fetchMarketTrend, fetchMarketNews, MarketTrend, NewsArticle } from '../data';
 import { motion, AnimatePresence } from 'motion/react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
