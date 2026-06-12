@@ -575,7 +575,7 @@ export const fetchSingleStockDetail = async (stock: StockDetail, market: 'TW' | 
       d.setDate(d.getDate() - 20);
       const startStr = d.toISOString().split('T')[0];
       
-      const url = \`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id=\${stock.id}&start_date=\${startStr}&end_date=\${todayStr}\${finmindKey ? \`&token=\${finmindKey}\` : ''}\`;
+      const url = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id=${stock.id}&start_date=${startStr}&end_date=${todayStr}${finmindKey ? `&token=${finmindKey}` : ''}`;
       const res = await fetch(url);
       const data = await res.json();
       if (data.data && data.data.length >= 2) {
@@ -591,8 +591,8 @@ export const fetchSingleStockDetail = async (stock: StockDetail, market: 'TW' | 
          return {
            ...stock,
            price: p,
-           change: \`\${isUp ? '+' : ''}\${changePct}%\`,
-           dataValue: \`NT\$\${p}\`,
+           change: `${isUp ? '+' : ''}${changePct}%`,
+           dataValue: `NT$${p}`,
            ...generateMockData(p),
            aiReport: {
              trend: isUp ? '多頭' : '空頭',
@@ -604,7 +604,7 @@ export const fetchSingleStockDetail = async (stock: StockDetail, market: 'TW' | 
          };
       }
   } catch(e) {
-     console.error(\`Failed to fetch \${stock.id}\`, e);
+     console.error(`Failed to fetch ${stock.id}`, e);
   }
   
   const randomPrice = 10 + Math.random() * 90;
