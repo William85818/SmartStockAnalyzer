@@ -1,4 +1,6 @@
 import { ShieldCheck, Zap, Building2 } from 'lucide-react';
+import { db } from './firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 export interface StockDetail {
   id: string;
@@ -469,7 +471,7 @@ export const fetchMarketData = async (market: 'TW' | 'US'): Promise<StockDetail[
         } catch(e) {
           console.error(`Failed to fetch ${mockStock.id}`, e);
         }
-        return mockStock; // Fallback to mock data if fetch fails
+        return mockStock;
       });
       
       const results = await Promise.all(fetchPromises);
@@ -575,11 +577,29 @@ export const fetchSingleStockDetail = async (stock: StockDetail, market: 'TW' | 
       d.setDate(d.getDate() - 20);
       const startStr = d.toISOString().split('T')[0];
       
-      // Use local proxy API
-      const url = `http://localhost:3001/api/finmind/price/${stock.id}?startStr=${startStr}&todayStr=${todayStr}${finmindKey ? `&finmindKey=${finmindKey}` : ''}`;
-      const res = await fetch(url);
-      const json = await res.json();
-      const data = json.data;
+      // Check Firebase Cache
+      const docRef = doc(db, 'stockPrices', stock.id);
+      const docSnap = await getDoc(docRef);
+      let data = null;
+
+      if (docSnap.exists()) {
+        const cache = docSnap.data();
+        const cacheDate = new Date(cache.updatedAt).toISOString().split('T')[0];
+        if (cacheDate === todayStr) {
+          data = cache.payload;
+        }
+      }
+
+      if (!data) {
+        // Fetch from FinMind
+        const url = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id=${stock.id}&start_date=${startStr}&end_date=${todayStr}${finmindKey ? `&token=${finmindKey}` : ''}`;
+        const res = await fetch(url);
+        data = await res.json();
+        
+        if (data.msg === 'success' && data.data && data.data.length > 0) {
+          await setDoc(docRef, { updatedAt: new Date().toISOString(), payload: data });
+        }
+      }
       if (data.data && data.data.length >= 2) {
          const latest = data.data[data.data.length - 1];
          const prev = data.data[data.data.length - 2];
@@ -735,11 +755,27 @@ export const fetchMarketNews = async (market: 'TW' | 'US'): Promise<NewsArticle[
       const d = new Date();
       d.setDate(d.getDate() - 3);
       const startDate = d.toISOString().split('T')[0];
-      // Use local proxy API
-      const url = `http://localhost:3001/api/finmind/news/2330?startStr=${startDate}${finmindKey ? '&finmindKey='+finmindKey : ''}`;
-      const res = await fetch(url);
-      const json = await res.json();
-      const data = json.data;
+      // Check Firebase Cache
+      const docRef = doc(db, 'stockNews', '2330');
+      const docSnap = await getDoc(docRef);
+      let data = null;
+
+      if (docSnap.exists()) {
+        const cache = docSnap.data();
+        const cacheAgeHours = (Date.now() - new Date(cache.updatedAt).getTime()) / (1000 * 60 * 60);
+        if (cacheAgeHours < 6) {
+          data = cache.payload;
+        }
+      }
+
+      if (!data) {
+        const url = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockNews&data_id=2330&start_date=${startDate}${finmindKey ? '&token='+finmindKey : ''}`;
+        const res = await fetch(url);
+        data = await res.json();
+        if (data.msg === 'success' && data.data) {
+          await setDoc(docRef, { updatedAt: new Date().toISOString(), payload: data });
+        }
+      }
       if (data.msg === 'success' && data.data && data.data.length > 0) {
         return data.data.slice(0, 5).map((item: any, i: number) => ({
           id: i.toString(),
