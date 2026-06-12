@@ -57,7 +57,7 @@ export default function WatchlistPanel({
                       <p className="text-sm font-mono text-blue-400">{stock.dataValue}</p>
                   </div>
                   <div className="text-right">
-                      <p className="text-2xl font-mono font-bold text-white leading-none">{stock.price}</p>
+                      <p className="text-2xl font-mono font-bold text-white leading-none">{stock.isLightweight ? '---' : stock.price}</p>
                   </div>
                 </div>
               </motion.div>

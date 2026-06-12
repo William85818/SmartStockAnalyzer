@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Cpu, Search, Heart, Flame, Filter, LayoutDashboard, PieChart, Home
+  Cpu, Search, Heart, Flame, Filter, LayoutDashboard, PieChart, Home, AlertCircle
 } from 'lucide-react';
-import { mockStocks, mockUsStocks, StockDetail, fetchRealTwseStocks } from './data';
+import { mockStocks, mockUsStocks, StockDetail, fetchRealTwseStocks, fetchSingleStockDetail, checkIsDemoMode } from './data';
 
 import ScreenerPanel from './components/ScreenerPanel';
 import StockDetailPanel from './components/StockDetailPanel';
@@ -12,7 +12,7 @@ import ThemesPanel from './components/ThemesPanel';
 import FilterPanel from './components/FilterPanel';
 import EtfThemesPanel from './components/EtfThemesPanel';
 import SettingsModal from './components/SettingsModal';
-import { Settings, Globe } from 'lucide-react';
+import { Settings, Globe, Loader2 } from 'lucide-react';
 
 type Route = 'screener' | 'watchlist' | 'themes' | 'filter' | 'etfthemes';
 
@@ -22,8 +22,10 @@ export default function App() {
   const [watchlist, setWatchlist] = useState<string[]>([]);
   const [realStocks, setRealStocks] = useState<StockDetail[]>([]);
   const [loadingRealData, setLoadingRealData] = useState(true);
+  const [isFetchingDetail, setIsFetchingDetail] = useState(false);
   const [market, setMarket] = useState<'TW' | 'US'>('TW');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const isDemoMode = checkIsDemoMode(market);
 
   // 載入 Watchlist
   useEffect(() => {
@@ -43,13 +45,7 @@ export default function App() {
       setLoadingRealData(true);
       try {
         const data = await fetchRealTwseStocks(market);
-        const baseMocks = market === 'US' ? mockUsStocks : mockStocks;
-        
-        // Remove duplicates if the fetched data already contains the mock stock
-        const dataIds = new Set(data.map(d => d.id));
-        const filteredMocks = baseMocks.filter(m => !dataIds.has(m.id));
-
-        setRealStocks([...filteredMocks, ...data]); 
+        setRealStocks(data); 
       } catch (e) {
         console.error(e);
         setRealStocks(market === 'US' ? mockUsStocks : mockStocks);
@@ -73,20 +69,38 @@ export default function App() {
     setSelectedStock(null);
   };
 
+  const handleSelectStock = async (stock: StockDetail) => {
+    if (stock.isLightweight) {
+      setIsFetchingDetail(true);
+      const detail = await fetchSingleStockDetail(stock, market);
+      setSelectedStock(detail);
+      setIsFetchingDetail(false);
+    } else {
+      setSelectedStock(stock);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#090b14] text-slate-200 font-sans selection:bg-blue-500/30 flex flex-col md:flex-row">
       
       {/* 側邊導覽列 */}
       {!selectedStock && (
       <aside className="w-full md:w-64 bg-[#0d111d] border-b md:border-b-0 md:border-r border-slate-800/60 p-6 flex flex-col z-20 shrink-0">
-        <div className="flex items-center gap-3 mb-10 cursor-pointer" onClick={() => handleNav('screener')}>
-          <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-2 rounded-xl shadow-[0_0_15px_rgba(59,130,246,0.3)]">
-            <Cpu className="text-white w-6 h-6" />
+        <div className="flex flex-col gap-3 mb-10">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleNav('screener')}>
+            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-2 rounded-xl shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+              <Cpu className="text-white w-6 h-6" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight text-white">AlphaFlow</h1>
+              <p className="text-[10px] text-blue-400 font-mono tracking-wider">AI ANALYTICS</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-white">AlphaFlow</h1>
-            <p className="text-[10px] text-blue-400 font-mono tracking-wider">AI ANALYTICS</p>
-          </div>
+          {isDemoMode && (
+            <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-bold w-max shadow-sm">
+              <AlertCircle className="w-3 h-3" /> DEMO MODE
+            </div>
+          )}
         </div>
 
         <nav className="flex md:flex-col gap-2 overflow-x-auto md:overflow-visible pb-2 md:pb-0 scrollbar-hide">
@@ -205,7 +219,12 @@ export default function App() {
         ) : (
           <AnimatePresence mode="wait">
             
-            {selectedStock ? (
+            {isFetchingDetail ? (
+              <div className="flex h-full flex-col items-center justify-center text-slate-400 gap-4 mt-20">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                正在拉取最新報價與資料...
+              </div>
+            ) : selectedStock ? (
               <StockDetailPanel 
                 stock={selectedStock} 
                 setStock={setSelectedStock} 
@@ -215,7 +234,7 @@ export default function App() {
             ) : activeRoute === 'screener' ? (
               <ScreenerPanel 
                 market={market}
-                onSelectStock={setSelectedStock} 
+                onSelectStock={handleSelectStock} 
                 watchlist={watchlist} 
                 toggleWatchlist={toggleWatchlist} 
                 pool={realStocks.filter(s => s.category !== 'etf')}
@@ -223,7 +242,7 @@ export default function App() {
             ) : activeRoute === 'themes' ? (
               <ThemesPanel 
                 market={market}
-                onSelectStock={setSelectedStock} 
+                onSelectStock={handleSelectStock} 
                 watchlist={watchlist} 
                 toggleWatchlist={toggleWatchlist} 
                 pool={realStocks.filter(s => s.category !== 'etf')}
@@ -231,13 +250,13 @@ export default function App() {
             ) : activeRoute === 'etfthemes' ? (
               <EtfThemesPanel 
                 market={market}
-                onSelectStock={setSelectedStock}
+                onSelectStock={handleSelectStock}
                 watchlist={watchlist} 
                 toggleWatchlist={toggleWatchlist} 
               />
             ) : activeRoute === 'filter' ? (
               <FilterPanel 
-                onSelectStock={setSelectedStock} 
+                onSelectStock={handleSelectStock} 
                 watchlist={watchlist} 
                 toggleWatchlist={toggleWatchlist} 
                 pool={realStocks.filter(s => s.category !== 'etf')}
@@ -245,7 +264,7 @@ export default function App() {
             ) : activeRoute === 'watchlist' ? (
               <WatchlistPanel 
                 watchlistedStocks={watchlistedStocks} 
-                onSelectStock={setSelectedStock} 
+                onSelectStock={handleSelectStock} 
                 toggleWatchlist={toggleWatchlist}
                 onGoToScreener={() => handleNav('screener')}
               />

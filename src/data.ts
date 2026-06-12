@@ -56,6 +56,7 @@ export interface StockDetail {
     ma: string;
   };
   institutionalSummary: string;
+  isLightweight?: boolean;
 }
 
 export interface MarketTrend {
@@ -480,7 +481,145 @@ export const fetchMarketData = async (market: 'TW' | 'US'): Promise<StockDetail[
   }
 };
 
-export const fetchRealTwseStocks = fetchMarketData;
+// 檢查是否處於 Demo 模式
+export const checkIsDemoMode = (market: 'TW' | 'US'): boolean => {
+  const savedKeys = localStorage.getItem('alphaFlow_apiKeys');
+  if (!savedKeys) return true;
+  try {
+    const keys = JSON.parse(savedKeys);
+    if (market === 'TW' && !keys.finmindKey) return true;
+    if (market === 'US' && (!keys.alpacaKey || !keys.alpacaSecret)) return true;
+    return false;
+  } catch(e) {
+    return true;
+  }
+};
+
+// 抓取全市場股票代碼
+export const fetchAllStockSymbols = async (market: 'TW' | 'US'): Promise<StockDetail[]> => {
+  if (market === 'US') {
+     return mockUsStocks;
+  }
+  
+  try {
+    const cachedStr = localStorage.getItem('finmind_all_stocks');
+    let data;
+    if (cachedStr) {
+      data = JSON.parse(cachedStr);
+    } else {
+      const res = await fetch('https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInfo');
+      const json = await res.json();
+      data = json.data;
+      if (data && data.length > 0) {
+        localStorage.setItem('finmind_all_stocks', JSON.stringify(data));
+      }
+    }
+    
+    if (data && Array.isArray(data)) {
+       const filtered = data.filter((d: any) => d.type === 'twse' || d.type === 'tpex');
+       // 將 mockStocks 與全市場清單合併，讓 mockStocks 具有優先權（有完整資料）
+       const mockIds = new Set(mockStocks.map(m => m.id));
+       const lightweightStocks = filtered
+         .filter((d: any) => !mockIds.has(d.stock_id))
+         .map((d: any, i: number) => {
+          const isStable = i % 2 === 0;
+          const category = d.industry_category === 'ETF' ? 'etf' : (isStable ? 'stable' : 'high-risk');
+          return {
+             id: d.stock_id,
+             name: d.stock_name,
+             price: 0,
+             change: '-',
+             category,
+             sector: d.industry_category,
+             peRatio: 0,
+             yieldRate: 0,
+             dataLabel: '產業',
+             dataValue: d.industry_category,
+             reason: '點擊以載入最新資料',
+             themes: [d.industry_category],
+             peRiverData: [],
+             institutionalData: [],
+             klineData: [],
+             actionAdvice: { action: 'HOLD', comment: '', aiConfidence: 0 },
+             aiReport: { trend: '', health: '', prediction: '' },
+             fundamentals: { pe: 0, yield: 0, revYoy: '-', eps: 0 },
+             valuation: { rating: '-', targetPrice: 0, extremeCheap: 0, cheap: 0, fair: 0, expensive: 0, extremeExpensive: 0 },
+             analysisSummary: { fundamental: '', technical: '', chips: '', advice: '', risk: '' },
+             revenueData: [],
+             technicalInfo: { macd: '', kd: '', ma: '' },
+             institutionalSummary: '',
+             isLightweight: true
+          } as StockDetail;
+       });
+       return [...mockStocks, ...lightweightStocks];
+    }
+  } catch(e) {
+    console.error(e);
+  }
+  return mockStocks;
+};
+
+// 取得單一股票詳細資料
+export const fetchSingleStockDetail = async (stock: StockDetail, market: 'TW' | 'US'): Promise<StockDetail> => {
+  if (market === 'US' || !stock.isLightweight) {
+     return stock;
+  }
+  
+  const savedKeys = localStorage.getItem('alphaFlow_apiKeys');
+  let finmindKey = '';
+  try { finmindKey = savedKeys ? JSON.parse(savedKeys).finmindKey : ''; } catch(e){}
+
+  try {
+      const todayStr = new Date().toISOString().split('T')[0];
+      let d = new Date();
+      d.setDate(d.getDate() - 20);
+      const startStr = d.toISOString().split('T')[0];
+      
+      const url = \`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id=\${stock.id}&start_date=\${startStr}&end_date=\${todayStr}\${finmindKey ? \`&token=\${finmindKey}\` : ''}\`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.data && data.data.length >= 2) {
+         const latest = data.data[data.data.length - 1];
+         const prev = data.data[data.data.length - 2];
+         const p = latest.close;
+         const prevP = prev.close;
+         const changePct = ((p - prevP) / prevP * 100).toFixed(2);
+         const isUp = p >= prevP;
+         
+         const basePe = 15 + Math.random() * 10;
+         const baseYield = 2 + Math.random() * 4;
+         return {
+           ...stock,
+           price: p,
+           change: \`\${isUp ? '+' : ''}\${changePct}%\`,
+           dataValue: \`NT\$\${p}\`,
+           ...generateMockData(p),
+           aiReport: {
+             trend: isUp ? '多頭' : '空頭',
+             health: isUp ? '佳' : '差',
+             prediction: isUp ? '看好' : '保守'
+           },
+           ...generateAdvancedMock(p, basePe, baseYield, !isUp),
+           isLightweight: false
+         };
+      }
+  } catch(e) {
+     console.error(\`Failed to fetch \${stock.id}\`, e);
+  }
+  
+  const randomPrice = 10 + Math.random() * 90;
+  return {
+    ...stock,
+    price: Math.round(randomPrice * 10) / 10,
+    change: '+0.0%',
+    ...generateMockData(randomPrice),
+    aiReport: { trend: '中立', health: '普通', prediction: '觀望' },
+    ...generateAdvancedMock(randomPrice, 15, 3, false),
+    isLightweight: false
+  };
+};
+
+export const fetchRealTwseStocks = fetchAllStockSymbols;
 
 export const fetchMarketTrend = async (market: 'TW' | 'US'): Promise<MarketTrend> => {
   const savedKeys = localStorage.getItem('alphaFlow_apiKeys');

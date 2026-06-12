@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Heart, Zap, ShieldCheck, Building2, Activity } from 'lucide-react';
-import { mockStocks, strategies, StockDetail } from '../data';
+import { strategies, StockDetail } from '../data';
 import { motion, AnimatePresence } from 'motion/react';
 import DailyFocusPanel from './DailyFocusPanel';
 
@@ -20,7 +20,10 @@ export default function ScreenerPanel({ market, onSelectStock, watchlist, toggle
     setIsAnalyzing(true);
     setResults(null);
     setTimeout(() => {
-      setResults(pool.filter(s => s.category === selectedStrategy));
+      const filtered = pool.filter(s => s.category === selectedStrategy);
+      // 從中隨機挑選 12 檔
+      const shuffled = [...filtered].sort(() => 0.5 - Math.random());
+      setResults(shuffled.slice(0, 12));
       setIsAnalyzing(false);
     }, 1000);
   };
@@ -31,7 +34,7 @@ export default function ScreenerPanel({ market, onSelectStock, watchlist, toggle
     const found = pool.filter(s => 
       s.id.includes(searchQuery) || s.name.includes(searchQuery)
     );
-    setResults(found);
+    setResults(found.slice(0, 12)); // 限制最多顯示 12 筆
     setIsAnalyzing(false);
   };
 
@@ -114,7 +117,7 @@ export default function ScreenerPanel({ market, onSelectStock, watchlist, toggle
                         <p className="text-sm font-mono text-blue-400">{stock.dataValue}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-2xl font-mono font-bold text-white leading-none">{stock.price}</p>
+                        <p className="text-2xl font-mono font-bold text-white leading-none">{stock.isLightweight ? '---' : stock.price}</p>
                       </div>
                     </div>
                   </motion.div>

@@ -172,7 +172,7 @@ export default function DailyFocusPanel({ market, onSelectStock, pool, watchlist
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-mono font-bold text-white">{stock.price}</p>
+                    <p className="text-sm font-mono font-bold text-white">{stock.isLightweight ? '---' : stock.price}</p>
                     <p className={`text-[11px] font-mono font-medium ${stock.change.startsWith('+') ? 'text-emerald-400' : stock.change.startsWith('-') ? 'text-rose-400' : 'text-slate-400'}`}>
                       {stock.change}
                     </p>

@@ -112,7 +112,7 @@ export default function FilterPanel({ onSelectStock, watchlist, toggleWatchlist 
                         </div>
                       </td>
                       <td className="px-6 py-4 text-slate-400">{stock.sector}</td>
-                      <td className="px-6 py-4 font-mono font-medium text-white">{stock.price}</td>
+                      <td className="px-6 py-4 font-mono font-medium text-white">{stock.isLightweight ? '---' : stock.price}</td>
                       <td className="px-6 py-4 font-mono text-blue-400">{stock.peRatio}x</td>
                       <td className="px-6 py-4 font-mono text-emerald-400">{stock.yieldRate}%</td>
                       <td className="px-6 py-4 text-center">

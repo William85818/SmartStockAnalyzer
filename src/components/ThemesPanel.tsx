@@ -102,7 +102,7 @@ export default function ThemesPanel({ market, onSelectStock, watchlist, toggleWa
                     <div className="grid grid-cols-3 gap-4 pt-4 border-t border-slate-800/80">
                       <div>
                         <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">股價</p>
-                        <p className="text-lg font-mono text-white">{stock.price}</p>
+                        <p className="text-lg font-mono text-white">{stock.isLightweight ? '---' : stock.price}</p>
                       </div>
                       <div>
                         <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">漲跌</p>
