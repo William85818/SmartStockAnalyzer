@@ -19,10 +19,11 @@ import WatchlistPanel from './components/WatchlistPanel';
 import ThemesPanel from './components/ThemesPanel';
 import FilterPanel from './components/FilterPanel';
 import EtfThemesPanel from './components/EtfThemesPanel';
+import HeatmapPanel from './components/HeatmapPanel';
 import SettingsModal from './components/SettingsModal';
-import { Settings, Globe, Loader2 } from 'lucide-react';
+import { Settings, Globe, Loader2, LayoutGrid } from 'lucide-react';
 
-type Route = 'screener' | 'watchlist' | 'themes' | 'filter' | 'etfthemes';
+type Route = 'screener' | 'watchlist' | 'themes' | 'filter' | 'etfthemes' | 'heatmap';
 
 export default function App() {
   const [activeRoute, setActiveRoute] = useState<Route>('screener');
@@ -161,6 +162,18 @@ export default function App() {
             <Filter className="w-5 h-5" />
             進階篩選
           </button>
+
+          <button 
+            onClick={() => handleNav('heatmap')}
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-sm font-medium whitespace-nowrap ${
+              activeRoute === 'heatmap' 
+                ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-500/20' 
+                : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 border border-transparent'
+            }`}
+          >
+            <LayoutGrid className="w-5 h-5" />
+            產業熱力圖
+          </button>
           
           <button 
             onClick={() => handleNav('watchlist')}
@@ -271,6 +284,11 @@ export default function App() {
                 watchlist={watchlist} 
                 toggleWatchlist={toggleWatchlist} 
                 pool={realStocks.filter(s => s.category !== 'etf')}
+              />
+            ) : activeRoute === 'heatmap' ? (
+              <HeatmapPanel 
+                pool={realStocks} 
+                onSelectStock={(s) => { handleSelectStock(s); }}
               />
             ) : activeRoute === 'watchlist' ? (
               <WatchlistPanel 

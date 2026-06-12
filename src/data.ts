@@ -676,21 +676,40 @@ export const fetchAllStockSymbols = async (market: 'TW' | 'US'): Promise<StockDe
     mockStocks.forEach(applyPriceUpdate);
     mockEtfs.forEach(applyPriceUpdate);
 
-    // localStorage cache with 24-hour expiry for stock symbols
-    const cachedStr = localStorage.getItem('finmind_all_stocks');
-    const cacheTime = localStorage.getItem('finmind_all_stocks_time');
-    const isCacheValid = cachedStr && cacheTime && (Date.now() - Number(cacheTime)) < 24 * 60 * 60 * 1000;
+    // Firebase global database cache for all stock symbols (24-hour expiry)
     let data;
-    if (isCacheValid) {
-      data = JSON.parse(cachedStr);
-    } else {
+    try {
+      const marketDocRef = doc(db, 'marketData', 'TaiwanStockInfo');
+      const marketSnap = await getDoc(marketDocRef);
+      if (marketSnap.exists()) {
+        const cache = marketSnap.data();
+        if (cache && cache.payload && cache.updatedAt) {
+          const cacheAgeMs = Date.now() - new Date(cache.updatedAt).getTime();
+          if (cacheAgeMs < 24 * 60 * 60 * 1000) {
+            data = cache.payload;
+            console.log('[Firebase Cache Hit] TaiwanStockInfo full market list loaded');
+          }
+        }
+      }
+      
+      if (!data) {
+        console.log('[API Fetch] Fetching TaiwanStockInfo from FinMind...');
+        const res = await fetch('https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInfo');
+        const json = await res.json();
+        data = json.data;
+        if (data && data.length > 0) {
+          await setDoc(marketDocRef, {
+            updatedAt: new Date().toISOString(),
+            payload: data
+          });
+          console.log('[Firebase Saved] TaiwanStockInfo full market list updated');
+        }
+      }
+    } catch(dbErr) {
+      console.warn('Firebase marketData cache failed, falling back to local API fetch', dbErr);
       const res = await fetch('https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInfo');
       const json = await res.json();
       data = json.data;
-      if (data && data.length > 0) {
-        localStorage.setItem('finmind_all_stocks', JSON.stringify(data));
-        localStorage.setItem('finmind_all_stocks_time', String(Date.now()));
-      }
     }
     
     if (data && Array.isArray(data)) {
