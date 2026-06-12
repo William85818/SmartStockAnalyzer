@@ -407,12 +407,28 @@ export default function StockDetailPanel({ stock: initialStock, setStock, watchl
         </div>
       </div>
 
-                  </h4>
-                </div>
-                <p className="text-[15px] text-slate-200 leading-relaxed font-normal">{stock.analysisSummary?.advice || stock.actionAdvice.comment}</p>
-              </div>
-            </div>
-          </div>
+      <div className="bg-[#111624] p-5 sm:p-6 rounded-2xl border border-slate-800 shadow-lg">
+        <h3 className="text-lg font-bold text-white flex items-center justify-between mb-6">
+           <div className="flex items-center gap-2">
+             <BarChart3 className="w-5 h-5 text-blue-400"/> 近 12 個月營收與 YoY 趨勢
+           </div>
+        </h3>
+        <div className="h-[300px] w-full text-xs">
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={stock.revenueData} margin={{ top: 10, right: 0, left: -10, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+              <XAxis dataKey="month" stroke="#64748b" tick={{fill: '#64748b'}} tickMargin={10} axisLine={false} />
+              <YAxis yAxisId="left" stroke="#64748b" tick={{fill: '#64748b'}} axisLine={false} tickLine={false} />
+              <YAxis yAxisId="right" orientation="right" stroke="#64748b" tick={{fill: '#64748b'}} axisLine={false} tickLine={false} tickFormatter={(val: any) => `${val}%`} />
+              <RechartsTooltip 
+                contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px' }}
+                formatter={(value: any, name: any) => [name === '營收' ? Number(value).toLocaleString() : `${value}%`, name]}
+              />
+              <Legend wrapperStyle={{ paddingTop: '10px' }} />
+              <Bar yAxisId="left" dataKey="revenue" fill="#3b82f6" name="營收" radius={[4, 4, 0, 0]} />
+              <Line yAxisId="right" type="monotone" dataKey="yoy" stroke="#f59e0b" name="YoY" strokeWidth={2} dot={{r: 4}} />
+            </ComposedChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </motion.div>
