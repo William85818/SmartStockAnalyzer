@@ -82,7 +82,7 @@ export default function LoginModal({ isOpen, onClose }: { isOpen: boolean, onClo
                       type="text" 
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      placeholder="請輸入帳號 (例如: william0818)"
+                      placeholder="請輸入帳號"
                       className="w-full bg-[#1e293b] text-white border border-slate-700 rounded-lg pl-10 pr-4 py-2.5 focus:outline-none focus:border-indigo-500 transition-colors"
                       required
                     />
