@@ -3,7 +3,14 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Cpu, Heart, Flame, Filter, PieChart, Home, AlertCircle
 } from 'lucide-react';
-import { mockStocks, mockUsStocks, StockDetail, fetchRealTwseStocks, fetchSingleStockDetail, checkIsDemoMode } from './data';
+import { 
+  StockDetail, 
+  fetchAllStockSymbols, 
+  fetchSingleStockDetail, 
+  mockUsStocks, 
+  mockStocks,
+  checkIsDemoMode
+} from './data';
 
 import ScreenerPanel from './components/ScreenerPanel';
 import StockDetailPanel from './components/StockDetailPanel';
@@ -44,7 +51,7 @@ export default function App() {
     const loadData = async () => {
       setLoadingRealData(true);
       try {
-        const data = await fetchRealTwseStocks(market);
+        const data = await fetchAllStockSymbols(market);
         setRealStocks(data); 
       } catch (e) {
         console.error(e);

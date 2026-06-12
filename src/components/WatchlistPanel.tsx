@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Heart, Activity } from 'lucide-react';
+import { Heart, Activity, ExternalLink } from 'lucide-react';
 import { StockDetail } from '../data';
 
 export default function WatchlistPanel({ 
@@ -41,9 +41,23 @@ export default function WatchlistPanel({
                       </span>
                       <h4 className="text-xl font-bold text-white">{stock.name}</h4>
                     </div>
-                    <button onClick={(e) => toggleWatchlist(stock.id, e)} className="p-1 -mr-1 hover:bg-slate-800 rounded-full transition-colors z-20">
-                      <Heart className="w-5 h-5 fill-rose-500 text-rose-500" />
-                    </button>
+                    <div className="flex items-center gap-1 z-20">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const isUsStock = isNaN(Number(stock.id));
+                          const exchange = isUsStock ? 'NASDAQ' : 'TPE';
+                          window.open(`https://www.google.com/finance/quote/${stock.id}:${exchange}`, '_blank');
+                        }}
+                        className="p-1.5 hover:bg-slate-800 rounded-full transition-colors text-slate-400 hover:text-blue-400"
+                        title="在 Google Finance 中查看"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </button>
+                      <button onClick={(e) => toggleWatchlist(stock.id, e)} className="p-1.5 -mr-1 hover:bg-slate-800 rounded-full transition-colors">
+                        <Heart className="w-5 h-5 fill-rose-500 text-rose-500" />
+                      </button>
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-3 mb-6 bg-slate-900/50 p-3 rounded-xl border border-slate-800 relative z-10">
